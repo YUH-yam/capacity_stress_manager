@@ -370,6 +370,27 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
 .wbs-tl-task .wbs-tl-chart { min-height: 50px; }
 .wbs-tl-cat .wbs-tl-chart { min-height: 28px; }
 .wbs-tl-header .wbs-tl-chart { height: 56px; background: var(--bg2); }
+/* sync status */
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text2);
+  margin-top: 5px;
+}
+.sync-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text3);
+  flex-shrink: 0;
+  transition: background .4s;
+}
+.sync-dot.idle    { background: var(--text3); }
+.sync-dot.syncing { background: var(--orange); animation: blink .8s infinite; }
+.sync-dot.synced  { background: var(--green); }
+.sync-dot.error   { background: var(--red); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 /* print / PDF */
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -436,6 +457,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
   <div class="header-right">
     <div class="label">週次利用率</div>
     <div class="util" id="weekUtil">--%</div>
+    <div class="sync-status no-print">
+      <div class="sync-dot idle" id="syncDot"></div>
+      <span id="syncText">Sheets未設定</span>
+    </div>
   </div>
 </div>
 
@@ -660,6 +685,31 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
 
 <!-- ==================== EXPORT ==================== -->
 <div class="panel" id="p-export">
+
+  <!-- GAS連携設定 -->
+  <div class="card no-print" style="margin-bottom:1rem;">
+    <div style="font-size:13px;font-weight:500;margin-bottom:5px;">🔗 Google スプレッドシート連携</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px;">
+      GAS Web App の URL を設定するとデータを自動的にスプレッドシートへ保存・読み込みします。<br>
+      設定方法は <code style="font-size:11px;background:var(--bg2);padding:1px 5px;border-radius:3px;">gas/Code.gs</code> の手順を参照してください。
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/…/exec"
+        style="flex:1;min-width:260px;font-size:12px;" oninput="onGasUrlInput()">
+      <button class="primary" onclick="saveGasUrl()">URLを保存</button>
+      <button onclick="clearGasUrl()" style="color:var(--red);border-color:#fcc;">クリア</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="reloadFromSheets()" id="reloadBtn" style="font-size:12px;">
+        🔄 Sheets から再読み込み
+      </button>
+      <button onclick="forceSyncToSheets()" id="forceSyncBtn" style="font-size:12px;">
+        ☁️ 今すぐ Sheets へ保存
+      </button>
+    </div>
+    <div id="gasStatusMsg" style="font-size:11px;color:var(--text2);margin-top:7px;"></div>
+  </div>
+
   <div class="card no-print">
     <div style="font-size:13px;font-weight:500;margin-bottom:5px;">全タブ一括PDF出力</div>
     <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:13px;">ダッシュボード・タスク管理・WBS・ストレスケアの全データをA4レイアウトで出力します。</div>
@@ -686,6 +736,162 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
 </div><!-- /app -->
 
 <script>
+// ==================== GAS / SHEETS SYNC ====================
+let gasUrl = '';
+let syncTimer = null;
+let isSyncing = false;
+
+function setSyncUI(state, msg) {
+  const dot  = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  const msgs = { idle:'Sheets未設定', loading:'読み込み中…', syncing:'同期中…', synced:'同期済み', error:'同期失敗' };
+  if (dot)  { dot.className = 'sync-dot ' + state; }
+  if (text) { text.textContent = msg || msgs[state] || state; }
+}
+
+function setGasMsg(msg, isError) {
+  const el = document.getElementById('gasStatusMsg');
+  if (el) { el.textContent = msg; el.style.color = isError ? 'var(--red)' : 'var(--text2)'; }
+}
+
+function loadGasUrl() {
+  try {
+    const stored = localStorage.getItem('csm_gas_url') || '';
+    gasUrl = stored;
+    const inp = document.getElementById('gasUrlInput');
+    if (inp && stored) inp.value = stored;
+    setSyncUI(stored ? 'idle' : 'idle', stored ? 'Sheets設定済み' : 'Sheets未設定');
+  } catch(e) {}
+}
+
+function onGasUrlInput() {
+  // リアルタイムプレビュー（保存はしない）
+}
+
+function saveGasUrl() {
+  const inp = document.getElementById('gasUrlInput');
+  const url = inp ? inp.value.trim() : '';
+  if (url && !url.startsWith('https://script.google.com/')) {
+    setGasMsg('URL が正しくありません。GAS Web App の URL を入力してください。', true);
+    return;
+  }
+  gasUrl = url;
+  try { localStorage.setItem('csm_gas_url', url); } catch(e) {}
+  if (url) {
+    setSyncUI('idle', 'Sheets設定済み');
+    setGasMsg('URL を保存しました。Sheets から再読み込みを実行するか、データを更新すると自動同期されます。');
+  } else {
+    setSyncUI('idle', 'Sheets未設定');
+    setGasMsg('URL をクリアしました。');
+  }
+}
+
+function clearGasUrl() {
+  gasUrl = '';
+  try { localStorage.removeItem('csm_gas_url'); } catch(e) {}
+  const inp = document.getElementById('gasUrlInput');
+  if (inp) inp.value = '';
+  setSyncUI('idle', 'Sheets未設定');
+  setGasMsg('Sheets 連携を解除しました。');
+}
+
+function buildPayload() {
+  return {
+    tasks, smxData, slog, nid, slogN,
+    settings: {
+      daily:  document.getElementById('dailyCap')?.value  || '8',
+      weekly: document.getElementById('weeklyCap')?.value || '40'
+    }
+  };
+}
+
+async function syncToSheets(silent) {
+  if (!gasUrl || isSyncing) return false;
+  isSyncing = true;
+  if (!silent) setSyncUI('syncing');
+  try {
+    const params = new URLSearchParams();
+    params.append('payload', JSON.stringify(buildPayload()));
+
+    await fetch(gasUrl, {
+      method: 'POST',
+      mode: 'no-cors', // GAS CORS 制限の回避。レスポンスは読めないため、GAS側の更新日時で確認する。
+      body: params
+    });
+
+    setSyncUI('synced', '送信完了');
+    return true;
+  } catch(e) {
+    console.error('Sheets sync failed:', e);
+    setSyncUI('error', '送信失敗');
+    return false;
+  } finally {
+    isSyncing = false;
+  }
+}
+
+async function loadFromSheets() {
+  if (!gasUrl) return null;
+  try {
+    const res = await fetch(gasUrl, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const data = JSON.parse(text);
+    // 空オブジェクト or エラーはスキップ
+    if (data.error || !data.tasks) return null;
+    return data;
+  } catch(e) {
+    return null;
+  }
+}
+
+function scheduleSheetsSync() {
+  if (!gasUrl) return;
+  if (syncTimer) clearTimeout(syncTimer);
+  setSyncUI('syncing', '同期待機中…');
+  syncTimer = setTimeout(() => syncToSheets(false), 1500);
+}
+
+async function reloadFromSheets() {
+  if (!gasUrl) { setGasMsg('先に GAS URL を設定してください。', true); return; }
+  setSyncUI('loading');
+  setGasMsg('スプレッドシートから読み込んでいます…');
+  const data = await loadFromSheets();
+  if (!data) {
+    setSyncUI('error');
+    setGasMsg('読み込みに失敗しました。URL・デプロイ設定を確認してください。', true);
+    return;
+  }
+  applyRemoteData(data);
+  saveDataLocalOnly();
+  saveSettingsLocalOnly();
+  ra();
+  setSyncUI('synced');
+  setGasMsg('スプレッドシートからデータを読み込みました。');
+}
+
+async function forceSyncToSheets() {
+  if (!gasUrl) { setGasMsg('先に GAS URL を設定してください。', true); return; }
+  const ok = await syncToSheets(false);
+  setGasMsg(ok
+    ? 'スプレッドシートへ送信しました。反映はシートの更新日時で確認してください。'
+    : 'スプレッドシートへの送信に失敗しました。URL・デプロイ設定を確認してください。', !ok);
+}
+
+function applyRemoteData(data) {
+  if (data.tasks)   tasks   = data.tasks;
+  if (data.smxData) smxData = data.smxData;
+  if (data.slog)    slog    = data.slog;
+  if (data.nid)     nid     = data.nid;
+  if (data.slogN)   slogN   = data.slogN;
+  if (data.settings) {
+    const dc = document.getElementById('dailyCap');
+    const wc = document.getElementById('weeklyCap');
+    if (dc && data.settings.daily)  dc.value = data.settings.daily;
+    if (wc && data.settings.weekly) wc.value = data.settings.weekly;
+  }
+}
+
 // ==================== DATA ====================
 const CATS = {Strategic:'戦略',Technical:'技術',People:'ピープル',Operational:'オペレーション',External:'外部対応'};
 const CAT_COLORS = {Strategic:'#1D9E75',Technical:'#378ADD',People:'#D4537E',Operational:'#888780',External:'#BA7517'};
@@ -745,7 +951,7 @@ let chartInst = null;
 let dragSrc = null;
 
 // ==================== STORAGE ====================
-function save() {
+function saveDataLocalOnly() {
   try {
     localStorage.setItem('csm_tasks', JSON.stringify(tasks));
     localStorage.setItem('csm_nid', String(nid));
@@ -753,6 +959,10 @@ function save() {
     localStorage.setItem('csm_slog', JSON.stringify(slog));
     localStorage.setItem('csm_slogN', String(slogN));
   } catch(e) {}
+}
+function save() {
+  saveDataLocalOnly();
+  scheduleSheetsSync(); // Sheets へデバウンス同期
 }
 function load() {
   try {
@@ -768,13 +978,17 @@ function load() {
     if (sn) slogN = parseInt(sn);
   } catch(e) {}
 }
-function saveSettings() {
+function saveSettingsLocalOnly() {
   try {
     const dc = document.getElementById('dailyCap');
     const wc = document.getElementById('weeklyCap');
     if (dc) localStorage.setItem('csm_dailyCap', dc.value);
     if (wc) localStorage.setItem('csm_weeklyCap', wc.value);
   } catch(e) {}
+}
+function saveSettings() {
+  saveSettingsLocalOnly();
+  scheduleSheetsSync();
 }
 function loadSettings() {
   try {
@@ -791,12 +1005,31 @@ const nd = new Date();
 document.getElementById('dateDisp').textContent =
   `${nd.getFullYear()}年${nd.getMonth()+1}月${nd.getDate()}日（${WDAYS[nd.getDay()]}）`;
 
+// localStorage から即時表示（ファーストペイント）
 load();
 loadSettings();
+loadGasUrl();
 ra();
+
 // Live progress slider label
 const tProg = document.getElementById('tProgress');
 if (tProg) tProg.addEventListener('input', () => { document.getElementById('tProgressVal').textContent = tProg.value + '%'; });
+
+// Sheets から最新データを非同期取得（GAS URL が設定済みの場合）
+(async () => {
+  if (!gasUrl) return;
+  setSyncUI('loading');
+  const data = await loadFromSheets();
+  if (data) {
+    applyRemoteData(data);
+    saveDataLocalOnly();
+    saveSettingsLocalOnly();
+    ra();
+    setSyncUI('synced');
+  } else {
+    setSyncUI('idle', 'Sheets設定済み');
+  }
+})();
 
 // ==================== TAB ====================
 function sw(tab) {
@@ -1102,12 +1335,11 @@ function renderWBS() {
   const WDAYS_SHORT = ['日','月','火','水','木','金','土'];
 
   // ── Build 3-row header ──
-  // Shared grid lines & col backgrounds
   let gridLines = '';
   let colBgs = '';
-  let monthBand = '';  // row 1: month
-  let dayBand   = '';  // row 2: day number
-  let wdayBand  = '';  // row 3: weekday
+  let monthBand = '';
+  let dayBand   = '';
+  let wdayBand  = '';
 
   let prevMonth = -1;
   let monthStartPct = 0;
@@ -1120,44 +1352,35 @@ function renderWBS() {
     const isSun = d.getDay() === 0;
     const isSat = d.getDay() === 6;
 
-    // Grid line
     gridLines += `<div style="position:absolute;left:${p.toFixed(3)}%;top:0;bottom:0;width:1px;background:var(--border);opacity:${(isSun||isSat)?0.7:0.3};pointer-events:none;z-index:1;"></div>`;
 
-    // Column background tint
     if (isToday) {
       colBgs += `<div style="position:absolute;left:${p.toFixed(3)}%;width:${cw.toFixed(3)}%;top:0;bottom:0;background:#ffe8e8;pointer-events:none;z-index:0;"></div>`;
     } else if (isSun || isSat) {
       colBgs += `<div style="position:absolute;left:${p.toFixed(3)}%;width:${cw.toFixed(3)}%;top:0;bottom:0;background:#f5f5f4;pointer-events:none;z-index:0;"></div>`;
     }
 
-    // Row 2: Day number (all days)
     const dayCol = isToday ? '#E24B4A' : isSun ? '#c44' : isSat ? '#4477cc' : 'var(--text2)';
     dayBand += `<div style="position:absolute;left:${p.toFixed(3)}%;width:${cw.toFixed(3)}%;top:33.3%;height:33.3%;display:flex;align-items:center;justify-content:center;font-size:${isToday?9:8}px;font-weight:${isToday?700:400};color:${dayCol};z-index:2;line-height:1;">${d.getDate()}</div>`;
 
-    // Row 3: Weekday
     const wdLabel = isToday ? '今' : WDAYS_SHORT[d.getDay()];
     wdayBand += `<div style="position:absolute;left:${p.toFixed(3)}%;width:${cw.toFixed(3)}%;top:66.6%;height:33.4%;display:flex;align-items:center;justify-content:center;font-size:${isToday?9:8}px;font-weight:${isToday?700:400};color:${dayCol};z-index:2;line-height:1;">${wdLabel}</div>`;
 
-    // Row 1: Month label — emit when month changes
     if (d.getMonth() !== prevMonth) {
       if (prevMonth !== -1) {
-        // close previous month label
         const monthW = (p - monthStartPct).toFixed(3);
         monthBand += `<div style="position:absolute;left:${monthStartPct.toFixed(3)}%;width:${monthW}%;top:0;height:33.3%;display:flex;align-items:center;padding-left:4px;font-size:9px;font-weight:600;color:var(--text);border-right:1px solid var(--border2);z-index:2;">${prevMonth+1}月</div>`;
       }
       prevMonth = d.getMonth();
       monthStartPct = p;
     }
-    // Close last month at end
     if (i === FUTURE_DAYS) {
       const monthW = (p + cw - monthStartPct).toFixed(3);
       monthBand += `<div style="position:absolute;left:${monthStartPct.toFixed(3)}%;width:${monthW}%;top:0;height:33.3%;display:flex;align-items:center;padding-left:4px;font-size:9px;font-weight:600;color:var(--text);z-index:2;">${prevMonth+1}月</div>`;
     }
   }
 
-  // Today column highlight in header
   const todayHighlight = `<div style="position:absolute;left:${todayPct.toFixed(3)}%;width:${COL_W}%;top:0;bottom:0;background:#ffdddd;z-index:0;pointer-events:none;"></div>`;
-  // Today vertical line
   const todayLine = `<div style="position:absolute;left:${todayPct.toFixed(3)}%;top:0;bottom:0;width:2px;background:#E24B4A;opacity:.6;z-index:5;pointer-events:none;"></div>`;
 
   const stLabel = {todo:'未着手', inprogress:'進行中', done:'完了'};
@@ -1199,7 +1422,6 @@ function renderWBS() {
         const dotCol    = isOverdue ? '#E24B4A' : isSoon ? '#EF9F27' : CAT_COLORS[cat];
         const dlLabel   = isOverdue ? `${Math.abs(diff)}日超過` : diff === 0 ? '今日' : `${diff}日後`;
 
-        // Progress fill bar (from past-start to deadline)
         const barFrom = parseFloat(pct(-PAST_DAYS));
         const barTo   = dp;
         const barW    = Math.abs(barTo - barFrom);
@@ -1212,7 +1434,6 @@ function renderWBS() {
           <div style="position:absolute;left:${dp.toFixed(3)}%;top:calc(26% + 16px);transform:translateX(-50%);z-index:6;font-size:8px;color:${dotCol};white-space:nowrap;font-weight:600;">${dlLabel}</div>
           <div style="position:absolute;left:${barFrom.toFixed(3)}%;top:58%;font-size:8px;color:${progCol};font-weight:600;z-index:5;">${prog}%</div>`;
       } else {
-        // No deadline: progress bar full width, dot at today
         const barFrom = parseFloat(pct(-PAST_DAYS));
         const barW    = parseFloat(pct(FUTURE_DAYS)) - barFrom;
         const fillW   = barW * prog / 100;
@@ -1278,7 +1499,6 @@ function renderWBS() {
 
 function printWBS() {
   renderWBS();
-  // Hide all panels, show only WBS
   const allPanels = document.querySelectorAll('.panel');
   const prevStates = [];
   allPanels.forEach(p => { prevStates.push(p.classList.contains('active')); p.classList.remove('active'); });
@@ -1286,7 +1506,6 @@ function printWBS() {
   document.body.classList.add('print-wbs-only');
   setTimeout(() => {
     window.print();
-    // Restore
     allPanels.forEach((p, i) => { if (prevStates[i]) p.classList.add('active'); });
     document.body.classList.remove('print-wbs-only');
   }, 150);
@@ -1303,7 +1522,6 @@ function updateStressMeta() {
   const al = document.getElementById('alertLbl');
   if (ac) { ac.style.background = alerts > 0 ? '#fff0f0' : ''; ac.style.borderColor = alerts > 0 ? '#fcc' : ''; }
   if (al) al.style.color = alerts > 0 ? '#c44' : '';
-  // top loc
   const la = LOCS.map(l => { const sc = AREAS.map(a => smxData[`${l}_${a}`]?.score).filter(Boolean); return {l, a: sc.length ? sc.reduce((a,b)=>a+b,0)/sc.length : 0}; });
   const tl = la.sort((a,b) => b.a - a.a)[0];
   sv('topLoc', tl?.a > 0 ? `${tl.l} (${tl.a.toFixed(1)})` : '--');
@@ -1408,20 +1626,13 @@ function renderSlog() {
 
 // ==================== PRINT ALL ====================
 function printAll() {
-  // Show all panels for printing
   const panels = ['p-dash','p-tasks','p-wbs','p-stress'];
-  // Prepare WBS before print
   renderWBS();
-  // We use CSS @media print to show all panels
   document.body.classList.add('printing-all');
-
-  // Temporarily force all panels visible
   panels.forEach(id => { document.getElementById(id).classList.add('active'); });
   document.getElementById('p-export').classList.remove('active');
-
   setTimeout(() => {
     window.print();
-    // Restore state
     panels.forEach(id => { document.getElementById(id).classList.remove('active'); });
     document.getElementById('p-export').classList.add('active');
     document.body.classList.remove('printing-all');
