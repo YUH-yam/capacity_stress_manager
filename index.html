@@ -754,13 +754,30 @@ function setGasMsg(msg, isError) {
   if (el) { el.textContent = msg; el.style.color = isError ? 'var(--red)' : 'var(--text2)'; }
 }
 
+function normalizeGasUrl(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  const clean = raw.split('#')[0].split('?')[0].trim();
+  const m = clean.match(/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/(exec|dev)$/);
+  if (!m) return null;
+  return clean.replace(/\/dev$/, '/exec');
+}
+
+function makeGasUrlWithQuery(params) {
+  if (!gasUrl) return '';
+  const qs = new URLSearchParams(params || {});
+  return gasUrl + (gasUrl.includes('?') ? '&' : '?') + qs.toString();
+}
+
 function loadGasUrl() {
   try {
     const stored = localStorage.getItem('csm_gas_url') || '';
-    gasUrl = stored;
+    const normalized = normalizeGasUrl(stored);
+    gasUrl = normalized || '';
     const inp = document.getElementById('gasUrlInput');
-    if (inp && stored) inp.value = stored;
-    setSyncUI(stored ? 'idle' : 'idle', stored ? 'Sheets設定済み' : 'Sheets未設定');
+    if (inp && stored) inp.value = normalized || stored;
+    setSyncUI(gasUrl ? 'idle' : 'idle', gasUrl ? 'Sheets設定済み' : 'Sheets未設定');
+    if (stored && !normalized) setGasMsg('保存済みURLの形式を確認してください。/macros/s/.../exec のURLが必要です。', true);
   } catch(e) {}
 }
 
@@ -770,16 +787,18 @@ function onGasUrlInput() {
 
 function saveGasUrl() {
   const inp = document.getElementById('gasUrlInput');
-  const url = inp ? inp.value.trim() : '';
-  if (url && !url.startsWith('https://script.google.com/')) {
-    setGasMsg('URL が正しくありません。GAS Web App の URL を入力してください。', true);
+  const rawUrl = inp ? inp.value.trim() : '';
+  const url = normalizeGasUrl(rawUrl);
+  if (url === null) {
+    setGasMsg('URL が正しくありません。GAS Web App の /macros/s/.../exec URL を入力してください。', true);
     return;
   }
   gasUrl = url;
+  if (inp) inp.value = url;
   try { localStorage.setItem('csm_gas_url', url); } catch(e) {}
   if (url) {
     setSyncUI('idle', 'Sheets設定済み');
-    setGasMsg('URL を保存しました。Sheets から再読み込みを実行するか、データを更新すると自動同期されます。');
+    setGasMsg('URL を保存しました。/dev が入力された場合は /exec に補正しています。今すぐ Sheets へ保存を実行してください。');
   } else {
     setSyncUI('idle', 'Sheets未設定');
     setGasMsg('URL をクリアしました。');
@@ -805,19 +824,80 @@ function buildPayload() {
   };
 }
 
+function pingGasByImage() {
+  if (!gasUrl) return;
+  try {
+    const img = new Image();
+    img.style.display = 'none';
+    img.onload = img.onerror = () => {
+      setTimeout(() => {
+        try { img.remove(); } catch(e) {}
+      }, 500);
+    };
+    document.body.appendChild(img);
+    img.src = makeGasUrlWithQuery({ action: 'ping', ts: Date.now() });
+  } catch(e) {}
+}
+
+function submitToGasByHiddenForm(payload) {
+  return new Promise((resolve, reject) => {
+    try {
+      const frameName = 'csm_gas_post_frame';
+      let frame = document.getElementById(frameName);
+      if (!frame) {
+        frame = document.createElement('iframe');
+        frame.name = frameName;
+        frame.id = frameName;
+        frame.style.display = 'none';
+        frame.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(frame);
+      }
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = gasUrl;
+      form.target = frameName;
+      form.style.display = 'none';
+      form.acceptCharset = 'UTF-8';
+
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'payload';
+      input.value = payload;
+      form.appendChild(input);
+
+      const clientTs = document.createElement('input');
+      clientTs.type = 'hidden';
+      clientTs.name = 'clientTs';
+      clientTs.value = new Date().toISOString();
+      form.appendChild(clientTs);
+
+      document.body.appendChild(form);
+      form.submit();
+
+      setTimeout(() => {
+        try { form.remove(); } catch(e) {}
+        resolve(true);
+      }, 1200);
+    } catch(e) {
+      reject(e);
+    }
+  });
+}
+
 async function syncToSheets(silent) {
   if (!gasUrl || isSyncing) return false;
   isSyncing = true;
   if (!silent) setSyncUI('syncing');
-  try {
-    const params = new URLSearchParams();
-    params.append('payload', JSON.stringify(buildPayload()));
 
-    await fetch(gasUrl, {
-      method: 'POST',
-      mode: 'no-cors', // GAS CORS 制限の回避。レスポンスは読めないため、GAS側の更新日時で確認する。
-      body: params
-    });
+  try {
+    const payload = JSON.stringify(buildPayload());
+
+    // GET到達確認用。H1〜J1に反映されるため、URL・公開設定・再デプロイ漏れの切り分けに使える。
+    pingGasByImage();
+
+    // fetch no-cors ではなく、通常のフォームPOSTで送る。CORS制限を受けにくく、GAS doPost に届きやすい。
+    await submitToGasByHiddenForm(payload);
 
     setSyncUI('synced', '送信完了');
     return true;
@@ -833,7 +913,7 @@ async function syncToSheets(silent) {
 async function loadFromSheets() {
   if (!gasUrl) return null;
   try {
-    const res = await fetch(gasUrl, { cache: 'no-store' });
+    const res = await fetch(makeGasUrlWithQuery({ action: 'load', ts: Date.now() }), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
     const data = JSON.parse(text);
@@ -874,7 +954,7 @@ async function forceSyncToSheets() {
   if (!gasUrl) { setGasMsg('先に GAS URL を設定してください。', true); return; }
   const ok = await syncToSheets(false);
   setGasMsg(ok
-    ? 'スプレッドシートへ送信しました。反映はシートの更新日時で確認してください。'
+    ? 'スプレッドシートへ送信しました。C1〜J1の更新状況も確認してください。'
     : 'スプレッドシートへの送信に失敗しました。URL・デプロイ設定を確認してください。', !ok);
 }
 
