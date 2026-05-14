@@ -910,19 +910,54 @@ async function syncToSheets(silent) {
   }
 }
 
+function loadFromSheetsByJsonp() {
+  return new Promise((resolve) => {
+    if (!gasUrl) { resolve(null); return; }
+
+    const callbackName = 'csmSheetLoad_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    let done = false;
+
+    function cleanup() {
+      if (done) return;
+      done = true;
+      try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; }
+      try { script.remove(); } catch(e) {}
+    }
+
+    window[callbackName] = function(data) {
+      cleanup();
+      if (!data || data.error || !data.tasks) {
+        resolve(null);
+        return;
+      }
+      resolve(data);
+    };
+
+    script.onerror = function() {
+      cleanup();
+      resolve(null);
+    };
+
+    script.src = makeGasUrlWithQuery({
+      action: 'load',
+      callback: callbackName,
+      ts: Date.now()
+    });
+
+    document.body.appendChild(script);
+
+    setTimeout(() => {
+      cleanup();
+      resolve(null);
+    }, 10000);
+  });
+}
+
 async function loadFromSheets() {
-  if (!gasUrl) return null;
-  try {
-    const res = await fetch(makeGasUrlWithQuery({ action: 'load', ts: Date.now() }), { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const data = JSON.parse(text);
-    // 空オブジェクト or エラーはスキップ
-    if (data.error || !data.tasks) return null;
-    return data;
-  } catch(e) {
-    return null;
-  }
+  // GAS WebアプリのContentServiceは、通常のfetchではCORSで読めない場合がある。
+  // そのため、読み込みはJSONP方式に統一する。
+  return await loadFromSheetsByJsonp();
 }
 
 function scheduleSheetsSync() {
