@@ -3,447 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CSM">
 <title>Capacity & Stress Manager</title>
+<link rel="manifest" href="manifest.json">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<style>
-:root {
-  --bg: #ffffff;
-  --bg2: #f5f5f4;
-  --bg3: #eeeeec;
-  --text: #1a1a18;
-  --text2: #6b6b68;
-  --text3: #a0a09c;
-  --border: #e0e0dc;
-  --border2: #d0d0cc;
-  --green: #1D9E75;
-  --blue: #378ADD;
-  --red: #E24B4A;
-  --orange: #EF9F27;
-  --purple: #D4537E;
-  --gray: #888780;
-  --brown: #BA7517;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --shadow: 0 1px 3px rgba(0,0,0,.08);
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
-  background: var(--bg2);
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-}
-.app {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 4rem;
-}
-/* header */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 1.25rem;
-}
-.header-left .eyebrow {
-  font-size: 10px;
-  letter-spacing: .12em;
-  color: var(--text3);
-  margin-bottom: 4px;
-}
-.header-left .date {
-  font-size: 20px;
-  font-weight: 500;
-}
-.header-right .label {
-  font-size: 11px;
-  color: var(--text2);
-  text-align: right;
-  margin-bottom: 2px;
-}
-.header-right .util {
-  font-size: 28px;
-  font-weight: 500;
-  font-family: 'SF Mono', monospace;
-}
-/* tabs */
-.tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 1.25rem;
-  overflow-x: auto;
-  gap: 0;
-}
-.tab {
-  padding: 8px 14px;
-  font-size: 13px;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text2);
-  cursor: pointer;
-  white-space: nowrap;
-  font-family: inherit;
-}
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
-/* panels */
-.panel { display: none; }
-.panel.active { display: block; }
-/* cards */
-.card {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
-  box-shadow: var(--shadow);
-}
-/* stat grid */
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 10px;
-  margin-bottom: 1rem;
-}
-.stat {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 13px;
-  box-shadow: var(--shadow);
-}
-.stat .label { font-size: 11px; color: var(--text2); margin-bottom: 5px; }
-.stat .value { font-size: 22px; font-weight: 500; font-family: 'SF Mono', monospace; }
-.stat .sub { font-size: 11px; color: var(--text2); }
-.stat .bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 7px; }
-.stat .bar { height: 3px; border-radius: 2px; transition: width .5s; }
-/* two-col */
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
-/* matrix */
-.mx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-.mx-cell {
-  border-radius: var(--radius-sm);
-  padding: 7px;
-  min-height: 70px;
-}
-.mx-cell .title { font-size: 10px; font-weight: 500; margin-bottom: 2px; }
-.mx-cell .sub { font-size: 9px; color: var(--text2); margin-bottom: 4px; }
-.mx-chip {
-  background: var(--bg);
-  border: 0.5px solid var(--border2);
-  border-radius: var(--radius-sm);
-  padding: 3px 6px;
-  margin-bottom: 3px;
-  font-size: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 3px;
-}
-.mx-chip span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* buttons */
-button {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-md);
-  padding: 8px 14px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background .15s;
-}
-button:hover { background: var(--bg3); }
-button.primary {
-  background: var(--text);
-  color: var(--bg);
-  border-color: var(--text);
-}
-button.primary:hover { background: #333; }
-button.danger { color: var(--red); border-color: #fcc; }
-button.sm { padding: 3px 9px; font-size: 11px; }
-/* inputs */
-input[type=text], input[type=number], input[type=date], select, textarea {
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-md);
-  padding: 7px 10px;
-  font-size: 13px;
-  font-family: inherit;
-  color: var(--text);
-  outline: none;
-}
-input:focus, select:focus, textarea:focus { border-color: var(--text); }
-/* filter buttons */
-.filter-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 1rem; }
-.fbtn {
-  padding: 4px 11px;
-  font-size: 12px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  color: var(--text2);
-}
-.fbtn.active { background: var(--bg); border-color: var(--border2); color: var(--text); font-weight: 500; }
-/* badges */
-.badge {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-}
-/* task cards */
-.task-item {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 12px 14px;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  cursor: grab;
-  transition: box-shadow .15s, opacity .15s;
-  box-shadow: var(--shadow);
-}
-.task-item:active { cursor: grabbing; }
-.task-item.dragging { opacity: .4; box-shadow: 0 4px 16px rgba(0,0,0,.15); }
-.task-item.drag-over { border-color: var(--blue); background: #f0f6ff; }
-.task-drag { color: var(--text3); font-size: 14px; cursor: grab; padding-top: 1px; flex-shrink: 0; user-select: none; }
-.task-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
-.task-body { flex: 1; min-width: 0; }
-.task-title { font-size: 13px; font-weight: 500; margin-bottom: 5px; }
-.task-meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 4px; }
-.task-deadline { font-size: 11px; color: var(--text2); }
-.task-deadline.overdue { color: var(--red); font-weight: 500; }
-.task-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
-.deadline-edit { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
-.deadline-edit input { padding: 3px 7px; font-size: 11px; }
-/* stress matrix */
-.smx-wrap { overflow-x: auto; }
-.smx-table { border-collapse: collapse; width: 100%; min-width: 480px; }
-.smx-table th, .smx-table td {
-  padding: 6px 4px;
-  text-align: center;
-  font-size: 12px;
-  border: 1px solid var(--border);
-}
-.smx-table th { background: var(--bg2); font-weight: 500; font-size: 11px; }
-.smx-table th.row-head { text-align: left; padding-left: 8px; }
-.smx-cell {
-  width: 70px;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: background .1s;
-}
-.smx-cell:hover { filter: brightness(.95); }
-.smx-score {
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 500;
-  margin: 0 auto 2px;
-}
-.smx-lbl { font-size: 9px; color: var(--text2); }
-/* edit panel */
-.edit-panel {
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-lg);
-  padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
-  box-shadow: var(--shadow);
-}
-.score-btns { display: flex; gap: 6px; margin-bottom: 10px; }
-.score-btn {
-  flex: 1;
-  padding: 8px 5px;
-  border-radius: var(--radius-md);
-  border: 2px solid transparent;
-  text-align: center;
-  cursor: pointer;
-  font-family: inherit;
-}
-/* log */
-.log-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--border);
-}
-.log-dot {
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 500;
-  flex-shrink: 0;
-}
-/* cap settings */
-.cap-row {
-  background: var(--bg2);
-  border-radius: var(--radius-md);
-  padding: 11px 13px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  align-items: center;
-  margin-bottom: 11px;
-  border: 1px solid var(--border);
-}
-/* stress summary */
-.stress-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
-.stress-circle {
-  width: 27px; height: 27px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 500;
-  flex-shrink: 0;
-}
-/* add task form */
-.add-form { display: grid; gap: 9px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-/* multi-check owner/tag */
-.multi-check-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 2px;
-}
-.mck-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  padding: 4px 9px;
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  background: var(--bg);
-  transition: background .12s, border-color .12s;
-  user-select: none;
-}
-.mck-label:hover { background: var(--bg2); }
-.mck-label input { display: none; }
-.mck-label.checked { background: var(--text); color: var(--bg); border-color: var(--text); }
-/* progress */
-.prog-edit-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 5px;
-  flex-wrap: wrap;
-}
-.prog-edit-row input[type=range] { flex: 1; min-width: 80px; accent-color: var(--green); }
-.task-prog-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 5px; }
-.task-prog-fill { height: 4px; border-radius: 2px; background: var(--green); transition: width .3s; }
-/* inline effort edit */
-.effort-edit-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 5px;
-  flex-wrap: wrap;
-}
-/* WBS Timeline */
-.wbs-timeline { font-size: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
-.wbs-tl-header, .wbs-tl-task, .wbs-tl-cat {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  align-items: stretch;
-}
-.wbs-tl-header:last-child, .wbs-tl-task:last-child, .wbs-tl-cat:last-child { border-bottom: none; }
-.wbs-tl-label {
-  width: 210px;
-  flex-shrink: 0;
-  padding: 6px 8px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  border-right: 1px solid var(--border);
-}
-.wbs-tl-chart { flex: 1; position: relative; overflow: hidden; }
-.wbs-tl-task:hover { background: var(--bg2); }
-.wbs-tl-task .wbs-tl-chart { min-height: 50px; }
-.wbs-tl-cat .wbs-tl-chart { min-height: 28px; }
-.wbs-tl-header .wbs-tl-chart { height: 56px; background: var(--bg2); }
-/* sync status */
-.sync-status {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--text2);
-  margin-top: 5px;
-}
-.sync-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--text3);
-  flex-shrink: 0;
-  transition: background .4s;
-}
-.sync-dot.idle    { background: var(--text3); }
-.sync-dot.syncing { background: var(--orange); animation: blink .8s infinite; }
-.sync-dot.synced  { background: var(--green); }
-.sync-dot.error   { background: var(--red); }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-/* print / PDF */
-@media print {
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  body { background: white; font-size: 12px; }
-  .app { max-width: 100%; padding: 0; margin: 0; }
-  .no-print { display: none !important; }
-  .print-only { display: block !important; }
-  .tabs { display: none; }
-  .panel { display: block !important; page-break-inside: avoid; }
-  .panel-print-section { page-break-before: always; }
-  .panel-print-section:first-child { page-break-before: avoid; }
-  @page { size: A4; margin: 15mm 12mm; }
-  .card, .stat { box-shadow: none; }
-  .wbs-tl-label { width: 160px; font-size: 10px; padding: 4px 6px; }
-  .wbs-tl-task .wbs-tl-chart { min-height: 40px; }
-  .wbs-tl-cat .wbs-tl-chart { min-height: 22px; }
-  .smx-table th, .smx-table td { font-size: 10px; padding: 4px 3px; }
-  .task-actions { display: none; }
-  .task-drag { display: none; }
-  .deadline-edit { display: none !important; }
-  .add-form-wrap { display: none; }
-  .filter-row { display: none; }
-  .cap-row { display: none; }
-  h2.print-section-title {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 10px;
-    padding-bottom: 6px;
-    border-bottom: 2px solid var(--text);
-  }
-}
-.print-only { display: none; }
-/* chart wrap */
-.chart-wrap { position: relative; height: 160px; margin-bottom: 10px; }
-/* legend */
-.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text2); }
-.legend-item { display: flex; align-items: center; gap: 5px; }
-.legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-/* progress bar */
-.prog-bar { height: 3px; background: var(--border); border-radius: 2px; }
-.prog-fill { height: 3px; border-radius: 2px; }
-/* gap helper */
-.gap { margin-bottom: 1rem; }
-/* stress legend */
-.s-legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text2); margin-bottom: 8px; }
-.s-legend-item { display: flex; align-items: center; gap: 3px; }
-.s-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-/* export bar */
-.export-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-/* print header */
-.print-header { display: none; }
-@media print { .print-header { display: block; margin-bottom: 8px; font-size: 10px; color: var(--text2); } }
-</style>
+<link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
 <div class="app" id="app">
@@ -470,6 +36,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
   <button class="tab" onclick="sw('tasks')">タスク管理</button>
   <button class="tab" onclick="sw('wbs')">WBS</button>
   <button class="tab" onclick="sw('stress')">ストレスケア</button>
+  <button class="tab" onclick="sw('settings')">設定</button>
   <button class="tab" onclick="sw('export')">全タブ出力</button>
 </div>
 
@@ -506,7 +73,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
       <div style="text-align:center;font-size:10px;color:var(--text2);margin-bottom:3px;">↑ 重要度：高</div>
       <div class="mx-grid">
         <div class="mx-cell" style="background:#eff6ff;">
-          <div class="title" style="color:#2563eb;">計画・実行</div>
+          <div class="title" style="color:#2563eb;">計画して実行</div>
           <div class="sub">重要·非緊急</div>
           <div id="q2t"></div>
         </div>
@@ -516,12 +83,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
           <div id="q1t"></div>
         </div>
         <div class="mx-cell" style="background:#f7f7f5;opacity:.75;">
-          <div class="title" style="color:var(--text2);">除外・削減</div>
+          <div class="title" style="color:var(--text2);">通常どおり</div>
           <div class="sub">非重要·非緊急</div>
           <div id="q4t"></div>
         </div>
         <div class="mx-cell" style="background:#fffbeb;">
-          <div class="title" style="color:#b45309;">委任</div>
+          <div class="title" style="color:#b45309;">協力依頼</div>
           <div class="sub">非重要·緊急</div>
           <div id="q3t"></div>
         </div>
@@ -548,8 +115,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
 <div class="panel" id="p-tasks">
   <div class="cap-row no-print">
     <span style="font-size:12px;font-weight:500;color:var(--text2);">キャパシティ設定</span>
-    <label style="display:flex;align-items:center;gap:6px;font-size:13px;">日次: <input type="number" id="dailyCap" value="8" min="1" max="16" style="width:46px;" oninput="saveSettings();ra()"> h</label>
-    <label style="display:flex;align-items:center;gap:6px;font-size:13px;">週次: <input type="number" id="weeklyCap" value="40" min="1" max="80" style="width:54px;" oninput="saveSettings();ra()"> h</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;">日次: <input type="number" id="dailyCap" value="8.0" min="0.1" max="16" step="0.1" style="width:58px;" oninput="saveSettings();ra()"> h</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;">週次: <input type="number" id="weeklyCap" value="40.0" min="0.1" max="80" step="0.1" style="width:64px;" oninput="saveSettings();ra()"> h</label>
   </div>
 
   <div class="card add-form-wrap no-print">
@@ -558,40 +125,22 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
       <input type="text" id="tTitle" placeholder="タスク名を入力..." style="width:100%;">
       <div>
         <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">カテゴリ</div>
-        <select id="tCat" style="width:100%;">
-          <option value="Strategic">戦略</option>
-          <option value="Technical">技術</option>
-          <option value="People">ピープル</option>
-          <option value="Operational">オペレーション</option>
-          <option value="External">外部対応</option>
-        </select>
+        <select id="tCat" style="width:100%;"></select>
       </div>
       <div>
         <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">担当（複数選択可）</div>
-        <div class="multi-check-group" id="tOwners">
-          <label class="mck-label checked" onclick="toggleMck(this)"><input type="checkbox" value="自分" checked>自分</label>
-          <label class="mck-label" onclick="toggleMck(this)"><input type="checkbox" value="マネージャー">マネージャー</label>
-          <label class="mck-label" onclick="toggleMck(this)"><input type="checkbox" value="リーダー">リーダー</label>
-          <label class="mck-label" onclick="toggleMck(this)"><input type="checkbox" value="メンバー1">メンバー1</label>
-          <label class="mck-label" onclick="toggleMck(this)"><input type="checkbox" value="メンバー2">メンバー2</label>
-          <label class="mck-label" onclick="toggleMck(this)"><input type="checkbox" value="メンバー3">メンバー3</label>
-        </div>
+        <div class="multi-check-group" id="tOwners"></div>
       </div>
       <div>
         <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">項目（複数選択可）</div>
-        <div class="multi-check-group" id="tTags">
-          <label class="mck-label" onclick="toggleMck(this)"><input type="checkbox" value="資料作成">資料作成</label>
-          <label class="mck-label" onclick="toggleMck(this)"><input type="checkbox" value="データ分析">データ分析</label>
-          <label class="mck-label" onclick="toggleMck(this)"><input type="checkbox" value="内部調整">内部調整</label>
-          <label class="mck-label" onclick="toggleMck(this)"><input type="checkbox" value="外部対応">外部対応</label>
-          <label class="mck-label" onclick="toggleMck(this)"><input type="checkbox" value="その他">その他</label>
-        </div>
+        <div class="multi-check-group" id="tTags"></div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="tUrgent"> 緊急</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="tImportant" checked> 重要</label>
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;">工数: <input type="number" id="tEffort" min=".5" max="40" step=".5" value="2" style="width:50px;"> h</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;">期限: <input type="date" id="tDeadline" style="width:140px;"></div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="tImportant"> 重要</label>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;">工数: <input type="number" id="tEffort" min="0.1" max="40" step="0.1" value="2.0" style="width:58px;"> h</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;">開始日: <input type="date" id="tStartDate" style="width:140px;"></div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;">終了日: <input type="date" id="tEndDate" style="width:140px;"></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
         <span style="flex-shrink:0;">進捗率:</span>
@@ -632,12 +181,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
     <div class="stat">
       <div class="label">全体ウェルネス</div>
       <div class="value" id="stressAvg">--</div>
-      <div class="sub">/ 5.0（低いほど良好）</div>
+      <div class="sub">/ 5.0（高いほど良好）</div>
     </div>
     <div class="stat" id="alertCard">
       <div class="label" id="alertLbl">要ケアポイント</div>
       <div class="value" id="alertCnt">--</div>
-      <div class="sub">スコア4以上</div>
+      <div class="sub">スコア2以下</div>
     </div>
     <div class="stat">
       <div class="label">最も負荷が高い場所</div>
@@ -656,9 +205,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
         <div style="font-size:11px;color:var(--text2);margin-top:2px;">セルをクリックして記録・更新</div>
       </div>
       <div class="s-legend">
-        <span class="s-legend-item"><span class="s-dot" style="background:#1D9E75;"></span>1-2 快調</span>
+        <span class="s-legend-item"><span class="s-dot" style="background:#1D9E75;"></span>5 非常に良い / 4 良い</span>
         <span class="s-legend-item"><span class="s-dot" style="background:#EF9F27;"></span>3 普通</span>
-        <span class="s-legend-item"><span class="s-dot" style="background:#E24B4A;"></span>4-5 要ケア</span>
+        <span class="s-legend-item"><span class="s-dot" style="background:#E24B4A;"></span>2 悪い / 1 非常に悪い</span>
       </div>
     </div>
     <div class="smx-wrap">
@@ -668,7 +217,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
 
   <div class="edit-panel no-print" id="editPanel" style="display:none;">
     <div style="font-size:13px;font-weight:500;margin-bottom:3px;" id="editTitle">選択中</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:11px;">現在の状態を選択（1=快調 〜 5=要ケア）</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:11px;">現在の状態を選択（5=非常に良い 〜 1=非常に悪い）</div>
     <div class="score-btns" id="scoreBtns"></div>
     <input type="text" id="stressNote" placeholder="メモ（任意）" style="width:100%;margin-bottom:9px;">
     <div style="display:flex;gap:7px;">
@@ -680,6 +229,55 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
   <div class="card">
     <div style="font-size:13px;font-weight:500;margin-bottom:9px;">記録ログ</div>
     <div id="slogEl"></div>
+  </div>
+</div>
+
+<!-- ==================== SETTINGS ==================== -->
+<div class="panel" id="p-settings">
+  <div class="card no-print">
+    <div style="font-size:13px;font-weight:500;margin-bottom:9px;">タスク設定</div>
+    <div class="settings-grid">
+      <section class="settings-section">
+        <div class="settings-head">
+          <div>
+            <div class="settings-title">カテゴリ</div>
+            <div class="settings-sub">タスク分類と表示色</div>
+          </div>
+        </div>
+        <div class="settings-list" id="categorySettingsList"></div>
+        <div class="settings-add-row">
+          <input type="text" id="newCategoryLabel" placeholder="カテゴリ名">
+          <input type="color" id="newCategoryColor" value="#378ADD" aria-label="カテゴリ色">
+          <button onclick="addCategorySetting()">追加</button>
+        </div>
+      </section>
+      <section class="settings-section">
+        <div class="settings-head">
+          <div>
+            <div class="settings-title">担当</div>
+            <div class="settings-sub">タスク担当の選択肢</div>
+          </div>
+        </div>
+        <div class="settings-list" id="ownerSettingsList"></div>
+        <div class="settings-add-row">
+          <input type="text" id="newOwnerValue" placeholder="担当名">
+          <button onclick="addListSetting('owners')">追加</button>
+        </div>
+      </section>
+      <section class="settings-section">
+        <div class="settings-head">
+          <div>
+            <div class="settings-title">項目</div>
+            <div class="settings-sub">タグとして付ける作業項目</div>
+          </div>
+        </div>
+        <div class="settings-list" id="tagSettingsList"></div>
+        <div class="settings-add-row">
+          <input type="text" id="newTagValue" placeholder="項目名">
+          <button onclick="addListSetting('tags')">追加</button>
+        </div>
+      </section>
+    </div>
   </div>
 </div>
 
@@ -726,7 +324,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
     <div style="font-size:12px;font-weight:500;margin-bottom:8px;">出力プレビュー</div>
     <div style="font-size:12px;color:var(--text2);line-height:1.9;">
       <div>📊 <strong>ダッシュボード</strong>：KPIカード、優先度マトリクス、ストレスサマリー、カテゴリ別工数</div>
-      <div>✅ <strong>タスク管理</strong>：全タスク一覧（期限・担当・工数）</div>
+      <div>✅ <strong>タスク管理</strong>：全タスク一覧（開始日・終了日・担当・工数）</div>
       <div>📋 <strong>WBS</strong>：カテゴリ別作業分解構造表</div>
       <div>🧘 <strong>ストレスケア</strong>：場所×部位マトリクス、記録ログ</div>
     </div>
@@ -735,1083 +333,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
 
 </div><!-- /app -->
 
-<script>
-// ==================== GAS / SHEETS SYNC ====================
-let gasUrl = '';
-let syncTimer = null;
-let isSyncing = false;
-
-function setSyncUI(state, msg) {
-  const dot  = document.getElementById('syncDot');
-  const text = document.getElementById('syncText');
-  const msgs = { idle:'Sheets未設定', loading:'読み込み中…', syncing:'同期中…', synced:'同期済み', error:'同期失敗' };
-  if (dot)  { dot.className = 'sync-dot ' + state; }
-  if (text) { text.textContent = msg || msgs[state] || state; }
-}
-
-function setGasMsg(msg, isError) {
-  const el = document.getElementById('gasStatusMsg');
-  if (el) { el.textContent = msg; el.style.color = isError ? 'var(--red)' : 'var(--text2)'; }
-}
-
-function normalizeGasUrl(url) {
-  const raw = String(url || '').trim();
-  if (!raw) return '';
-  const clean = raw.split('#')[0].split('?')[0].trim();
-  const m = clean.match(/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/(exec|dev)$/);
-  if (!m) return null;
-  return clean.replace(/\/dev$/, '/exec');
-}
-
-function makeGasUrlWithQuery(params) {
-  if (!gasUrl) return '';
-  const qs = new URLSearchParams(params || {});
-  return gasUrl + (gasUrl.includes('?') ? '&' : '?') + qs.toString();
-}
-
-function loadGasUrl() {
-  try {
-    const stored = localStorage.getItem('csm_gas_url') || '';
-    const normalized = normalizeGasUrl(stored);
-    gasUrl = normalized || '';
-    const inp = document.getElementById('gasUrlInput');
-    if (inp && stored) inp.value = normalized || stored;
-    setSyncUI(gasUrl ? 'idle' : 'idle', gasUrl ? 'Sheets設定済み' : 'Sheets未設定');
-    if (stored && !normalized) setGasMsg('保存済みURLの形式を確認してください。/macros/s/.../exec のURLが必要です。', true);
-  } catch(e) {}
-}
-
-function onGasUrlInput() {
-  // リアルタイムプレビュー（保存はしない）
-}
-
-function saveGasUrl() {
-  const inp = document.getElementById('gasUrlInput');
-  const rawUrl = inp ? inp.value.trim() : '';
-  const url = normalizeGasUrl(rawUrl);
-  if (url === null) {
-    setGasMsg('URL が正しくありません。GAS Web App の /macros/s/.../exec URL を入力してください。', true);
-    return;
-  }
-  gasUrl = url;
-  if (inp) inp.value = url;
-  try { localStorage.setItem('csm_gas_url', url); } catch(e) {}
-  if (url) {
-    setSyncUI('idle', 'Sheets設定済み');
-    setGasMsg('URL を保存しました。/dev が入力された場合は /exec に補正しています。今すぐ Sheets へ保存を実行してください。');
-  } else {
-    setSyncUI('idle', 'Sheets未設定');
-    setGasMsg('URL をクリアしました。');
-  }
-}
-
-function clearGasUrl() {
-  gasUrl = '';
-  try { localStorage.removeItem('csm_gas_url'); } catch(e) {}
-  const inp = document.getElementById('gasUrlInput');
-  if (inp) inp.value = '';
-  setSyncUI('idle', 'Sheets未設定');
-  setGasMsg('Sheets 連携を解除しました。');
-}
-
-function buildPayload() {
-  return {
-    tasks, smxData, slog, nid, slogN,
-    settings: {
-      daily:  document.getElementById('dailyCap')?.value  || '8',
-      weekly: document.getElementById('weeklyCap')?.value || '40'
-    }
-  };
-}
-
-function pingGasByImage() {
-  if (!gasUrl) return;
-  try {
-    const img = new Image();
-    img.style.display = 'none';
-    img.onload = img.onerror = () => {
-      setTimeout(() => {
-        try { img.remove(); } catch(e) {}
-      }, 500);
-    };
-    document.body.appendChild(img);
-    img.src = makeGasUrlWithQuery({ action: 'ping', ts: Date.now() });
-  } catch(e) {}
-}
-
-function submitToGasByHiddenForm(payload) {
-  return new Promise((resolve, reject) => {
-    try {
-      const frameName = 'csm_gas_post_frame';
-      let frame = document.getElementById(frameName);
-      if (!frame) {
-        frame = document.createElement('iframe');
-        frame.name = frameName;
-        frame.id = frameName;
-        frame.style.display = 'none';
-        frame.setAttribute('aria-hidden', 'true');
-        document.body.appendChild(frame);
-      }
-
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = gasUrl;
-      form.target = frameName;
-      form.style.display = 'none';
-      form.acceptCharset = 'UTF-8';
-
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'payload';
-      input.value = payload;
-      form.appendChild(input);
-
-      const clientTs = document.createElement('input');
-      clientTs.type = 'hidden';
-      clientTs.name = 'clientTs';
-      clientTs.value = new Date().toISOString();
-      form.appendChild(clientTs);
-
-      document.body.appendChild(form);
-      form.submit();
-
-      setTimeout(() => {
-        try { form.remove(); } catch(e) {}
-        resolve(true);
-      }, 1200);
-    } catch(e) {
-      reject(e);
-    }
-  });
-}
-
-async function syncToSheets(silent) {
-  if (!gasUrl || isSyncing) return false;
-  isSyncing = true;
-  if (!silent) setSyncUI('syncing');
-
-  try {
-    const payload = JSON.stringify(buildPayload());
-
-    // GET到達確認用。H1〜J1に反映されるため、URL・公開設定・再デプロイ漏れの切り分けに使える。
-    pingGasByImage();
-
-    // fetch no-cors ではなく、通常のフォームPOSTで送る。CORS制限を受けにくく、GAS doPost に届きやすい。
-    await submitToGasByHiddenForm(payload);
-
-    setSyncUI('synced', '送信完了');
-    return true;
-  } catch(e) {
-    console.error('Sheets sync failed:', e);
-    setSyncUI('error', '送信失敗');
-    return false;
-  } finally {
-    isSyncing = false;
-  }
-}
-
-function loadFromSheetsByJsonp() {
-  return new Promise((resolve) => {
-    if (!gasUrl) { resolve(null); return; }
-
-    const callbackName = 'csmSheetLoad_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    const script = document.createElement('script');
-    let done = false;
-
-    function cleanup() {
-      if (done) return;
-      done = true;
-      try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; }
-      try { script.remove(); } catch(e) {}
-    }
-
-    window[callbackName] = function(data) {
-      cleanup();
-      if (!data || data.error || !data.tasks) {
-        resolve(null);
-        return;
-      }
-      resolve(data);
-    };
-
-    script.onerror = function() {
-      cleanup();
-      resolve(null);
-    };
-
-    script.src = makeGasUrlWithQuery({
-      action: 'load',
-      callback: callbackName,
-      ts: Date.now()
-    });
-
-    document.body.appendChild(script);
-
-    setTimeout(() => {
-      cleanup();
-      resolve(null);
-    }, 10000);
-  });
-}
-
-async function loadFromSheets() {
-  // GAS WebアプリのContentServiceは、通常のfetchではCORSで読めない場合がある。
-  // そのため、読み込みはJSONP方式に統一する。
-  return await loadFromSheetsByJsonp();
-}
-
-function scheduleSheetsSync() {
-  if (!gasUrl) return;
-  if (syncTimer) clearTimeout(syncTimer);
-  setSyncUI('syncing', '同期待機中…');
-  syncTimer = setTimeout(() => syncToSheets(false), 1500);
-}
-
-async function reloadFromSheets() {
-  if (!gasUrl) { setGasMsg('先に GAS URL を設定してください。', true); return; }
-  setSyncUI('loading');
-  setGasMsg('スプレッドシートから読み込んでいます…');
-  const data = await loadFromSheets();
-  if (!data) {
-    setSyncUI('error');
-    setGasMsg('読み込みに失敗しました。URL・デプロイ設定を確認してください。', true);
-    return;
-  }
-  applyRemoteData(data);
-  saveDataLocalOnly();
-  saveSettingsLocalOnly();
-  ra();
-  setSyncUI('synced');
-  setGasMsg('スプレッドシートからデータを読み込みました。');
-}
-
-async function forceSyncToSheets() {
-  if (!gasUrl) { setGasMsg('先に GAS URL を設定してください。', true); return; }
-  const ok = await syncToSheets(false);
-  setGasMsg(ok
-    ? 'スプレッドシートへ送信しました。C1〜J1の更新状況も確認してください。'
-    : 'スプレッドシートへの送信に失敗しました。URL・デプロイ設定を確認してください。', !ok);
-}
-
-function applyRemoteData(data) {
-  if (data.tasks)   tasks   = data.tasks;
-  if (data.smxData) smxData = data.smxData;
-  if (data.slog)    slog    = data.slog;
-  if (data.nid)     nid     = data.nid;
-  if (data.slogN)   slogN   = data.slogN;
-  if (data.settings) {
-    const dc = document.getElementById('dailyCap');
-    const wc = document.getElementById('weeklyCap');
-    if (dc && data.settings.daily)  dc.value = data.settings.daily;
-    if (wc && data.settings.weekly) wc.value = data.settings.weekly;
-  }
-}
-
-// ==================== DATA ====================
-const CATS = {Strategic:'戦略',Technical:'技術',People:'ピープル',Operational:'オペレーション',External:'外部対応'};
-const CAT_COLORS = {Strategic:'#1D9E75',Technical:'#378ADD',People:'#D4537E',Operational:'#888780',External:'#BA7517'};
-const LOCS = ['職場','LITALICO','家','移動中','その他'];
-const AREAS = ['体調','メンタル','脳・集中','エネルギー','睡眠'];
-const SC = {1:'#1D9E75',2:'#5BB082',3:'#EF9F27',4:'#D85A30',5:'#E24B4A'};
-const SL = {1:'快調',2:'良好',3:'普通',4:'疲弊気味',5:'要ケア'};
-const OWNER_LIST = ['自分','マネージャー','リーダー','メンバー1','メンバー2','メンバー3'];
-const TAG_LIST   = ['資料作成','データ分析','内部調整','外部対応','その他'];
-
-// multi-check toggle helper
-function toggleMck(lbl) {
-  const cb = lbl.querySelector('input');
-  cb.checked = !cb.checked;
-  lbl.classList.toggle('checked', cb.checked);
-}
-// read checked values from a group
-function readMck(groupId) {
-  return [...document.querySelectorAll(`#${groupId} input:checked`)].map(c => c.value);
-}
-// reset a group to default checked values
-function resetMck(groupId, defaults=[]) {
-  document.querySelectorAll(`#${groupId} .mck-label`).forEach(lbl => {
-    const cb = lbl.querySelector('input');
-    cb.checked = defaults.includes(cb.value);
-    lbl.classList.toggle('checked', cb.checked);
-  });
-}
-
-function defaultStress() {
-  const d = {};
-  LOCS.forEach(loc => AREAS.forEach(area => {
-    d[`${loc}_${area}`] = {score:3, note:'', ts:todayStr()};
-  }));
-  return d;
-}
-
-function todayStr() {
-  const n = new Date();
-  return `${n.getMonth()+1}/${n.getDate()} ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}`;
-}
-
-let tasks = [{
-  id:1,title:'Q2プロダクトロードマップ策定',category:'Strategic',
-  urgency:false,importance:true,effort:4,status:'todo',
-  owners:['自分'],tags:[],progress:0,deadline:''
-}];
-let nid = 2;
-let taskFilter = 'all';
-let smxData = defaultStress();
-let slog = [];
-let slogN = 1;
-let selCell = null, selScore = null;
-let chartInst = null;
-
-// drag state
-let dragSrc = null;
-
-// ==================== STORAGE ====================
-function saveDataLocalOnly() {
-  try {
-    localStorage.setItem('csm_tasks', JSON.stringify(tasks));
-    localStorage.setItem('csm_nid', String(nid));
-    localStorage.setItem('csm_smx', JSON.stringify(smxData));
-    localStorage.setItem('csm_slog', JSON.stringify(slog));
-    localStorage.setItem('csm_slogN', String(slogN));
-  } catch(e) {}
-}
-function save() {
-  saveDataLocalOnly();
-  scheduleSheetsSync(); // Sheets へデバウンス同期
-}
-function load() {
-  try {
-    const t = localStorage.getItem('csm_tasks');
-    if (t) tasks = JSON.parse(t);
-    const n = localStorage.getItem('csm_nid');
-    if (n) nid = parseInt(n);
-    const s = localStorage.getItem('csm_smx');
-    if (s) smxData = JSON.parse(s);
-    const sl = localStorage.getItem('csm_slog');
-    if (sl) slog = JSON.parse(sl);
-    const sn = localStorage.getItem('csm_slogN');
-    if (sn) slogN = parseInt(sn);
-  } catch(e) {}
-}
-function saveSettingsLocalOnly() {
-  try {
-    const dc = document.getElementById('dailyCap');
-    const wc = document.getElementById('weeklyCap');
-    if (dc) localStorage.setItem('csm_dailyCap', dc.value);
-    if (wc) localStorage.setItem('csm_weeklyCap', wc.value);
-  } catch(e) {}
-}
-function saveSettings() {
-  saveSettingsLocalOnly();
-  scheduleSheetsSync();
-}
-function loadSettings() {
-  try {
-    const dc = localStorage.getItem('csm_dailyCap');
-    const wc = localStorage.getItem('csm_weeklyCap');
-    if (dc && document.getElementById('dailyCap')) document.getElementById('dailyCap').value = dc;
-    if (wc && document.getElementById('weeklyCap')) document.getElementById('weeklyCap').value = wc;
-  } catch(e) {}
-}
-
-// ==================== INIT ====================
-const WDAYS = ['日','月','火','水','木','金','土'];
-const nd = new Date();
-document.getElementById('dateDisp').textContent =
-  `${nd.getFullYear()}年${nd.getMonth()+1}月${nd.getDate()}日（${WDAYS[nd.getDay()]}）`;
-
-// localStorage から即時表示（ファーストペイント）
-load();
-loadSettings();
-loadGasUrl();
-ra();
-
-// Live progress slider label
-const tProg = document.getElementById('tProgress');
-if (tProg) tProg.addEventListener('input', () => { document.getElementById('tProgressVal').textContent = tProg.value + '%'; });
-
-// Sheets から最新データを非同期取得（GAS URL が設定済みの場合）
-(async () => {
-  if (!gasUrl) return;
-  setSyncUI('loading');
-  const data = await loadFromSheets();
-  if (data) {
-    applyRemoteData(data);
-    saveDataLocalOnly();
-    saveSettingsLocalOnly();
-    ra();
-    setSyncUI('synced');
-  } else {
-    setSyncUI('idle', 'Sheets設定済み');
-  }
-})();
-
-// ==================== TAB ====================
-function sw(tab) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('p-'+tab).classList.add('active');
-  const tabs = document.querySelectorAll('.tab');
-  const idx = {'dash':0,'tasks':1,'wbs':2,'stress':3,'export':4};
-  tabs[idx[tab]].classList.add('active');
-  if (tab==='dash') { updateMetrics(); renderMatrix(); renderChart(); renderDashStress(); }
-  if (tab==='tasks') renderTaskList();
-  if (tab==='wbs') renderWBS();
-  if (tab==='stress') { updateStressMeta(); renderSmx(); renderSlog(); }
-}
-
-// ==================== METRICS ====================
-function getCap() {
-  return {
-    d: parseFloat(document.getElementById('dailyCap')?.value || 8),
-    w: parseFloat(document.getElementById('weeklyCap')?.value || 40)
-  };
-}
-function bc(p) { return p >= 1 ? '#E24B4A' : p >= .8 ? '#EF9F27' : '#1D9E75'; }
-function sv(id, v) { const e = document.getElementById(id); if (e) e.textContent = v; }
-
-function updateMetrics() {
-  const {d, w} = getCap();
-  const myA = tasks.filter(t => (t.owners||[t.owner]).includes('自分') && t.status !== 'done');
-  const te = myA.filter(t => t.urgency).reduce((s,t) => s + t.effort, 0);
-  const we = myA.reduce((s,t) => s + t.effort, 0);
-  const tp = Math.min(te/d, 1), wp = Math.min(we/w, 1);
-  sv('todayH', te.toFixed(1)+'h');
-  sv('weekH', we.toFixed(1)+'h');
-  sv('todayCapL', '/ '+d+'h 上限');
-  sv('weekCapL', '/ '+w+'h 上限');
-  sv('weekUtil', Math.round(wp*100)+'%');
-  sv('q1Cnt', tasks.filter(t => t.urgency && t.importance && t.status !== 'done').length);
-  const tb = document.getElementById('todayBar');
-  const wb = document.getElementById('weekBar');
-  if (tb) { tb.style.width = Math.round(tp*100)+'%'; tb.style.background = bc(tp); }
-  if (wb) { wb.style.width = Math.round(wp*100)+'%'; wb.style.background = bc(wp); }
-  const alerts = Object.values(smxData).filter(x => x.score >= 4).length;
-  sv('stressStatNum', alerts);
-  const ss = document.getElementById('stressStat');
-  const sl = document.getElementById('stressStatLbl');
-  if (ss) ss.style.background = alerts > 0 ? '#fff0f0' : '';
-  if (ss) ss.style.borderColor = alerts > 0 ? '#fcc' : '';
-  if (sl) sl.style.color = alerts > 0 ? '#c44' : '';
-}
-
-function renderMatrix() {
-  const act = tasks.filter(t => t.status !== 'done');
-  [{q:'q1',u:true,i:true},{q:'q2',u:false,i:true},{q:'q3',u:true,i:false},{q:'q4',u:false,i:false}].forEach(({q,u,i}) => {
-    const el = document.getElementById(q+'t'); if (!el) return;
-    const qt = act.filter(t => t.urgency === u && t.importance === i);
-    el.innerHTML = qt.map(t =>
-      `<div class="mx-chip"><span>${t.title}</span><span style="background:${CAT_COLORS[t.category]}22;color:${CAT_COLORS[t.category]};padding:1px 5px;border-radius:3px;font-size:9px;flex-shrink:0;">${t.effort}h</span></div>`
-    ).join('') || '<div style="font-size:10px;color:var(--text3);font-style:italic;">なし</div>';
-  });
-}
-
-function renderDashStress() {
-  const el = document.getElementById('dashStressSummary'); if (!el) return;
-  const rows = LOCS.map(loc => {
-    const sc = AREAS.map(a => smxData[`${loc}_${a}`]?.score).filter(Boolean);
-    if (!sc.length) return null;
-    const avg = sc.reduce((a,b) => a+b, 0) / sc.length;
-    return {loc, avg, col: SC[Math.round(avg)]};
-  }).filter(Boolean);
-  el.innerHTML = rows.map(r =>
-    `<div class="stress-bar-row">
-      <div class="stress-circle" style="background:${r.col}22;color:${r.col};">${r.avg.toFixed(1)}</div>
-      <div style="flex:1;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
-          <span style="font-size:12px;font-weight:500;">${r.loc}</span>
-          <span style="font-size:11px;color:${r.col};">${SL[Math.round(r.avg)]}</span>
-        </div>
-        <div class="prog-bar"><div class="prog-fill" style="background:${r.col};width:${Math.round(r.avg/5*100)}%;"></div></div>
-      </div>
-    </div>`
-  ).join('') || '<div style="font-size:12px;color:var(--text2);">まだ記録がありません</div>';
-}
-
-function renderChart() {
-  const filt = Object.keys(CATS).map(c => ({
-    c, v: tasks.filter(t => t.category === c && t.status !== 'done').reduce((s,t) => s+t.effort, 0),
-    color: CAT_COLORS[c]
-  })).filter(x => x.v > 0);
-  const canvas = document.getElementById('catChart'); if (!canvas) return;
-  if (chartInst) { chartInst.destroy(); chartInst = null; }
-  if (!filt.length) return;
-  chartInst = new Chart(canvas, {
-    type: 'doughnut',
-    data: { labels: filt.map(x => CATS[x.c]), datasets: [{ data: filt.map(x => x.v), backgroundColor: filt.map(x => x.color), borderWidth: 0, hoverOffset: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}h` } } } }
-  });
-  document.getElementById('chartLegend').innerHTML = filt.map(x =>
-    `<div class="legend-item"><div class="legend-dot" style="background:${x.color};"></div>${CATS[x.c]} ${x.v}h</div>`
-  ).join('');
-}
-
-// ==================== TASKS ====================
-function sf(f) {
-  taskFilter = f;
-  ['all','self','del','done'].forEach(id => document.getElementById('f-'+id)?.classList.toggle('active', id === f));
-  renderTaskList();
-}
-
-function deadlineColor(dl) {
-  if (!dl) return '';
-  const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(dl);
-  const diff = Math.ceil((d - today) / 86400000);
-  if (diff < 0) return 'color:#c44;font-weight:500;'; // overdue
-  if (diff <= 3) return 'color:#b45309;font-weight:500;'; // soon
-  return 'color:var(--text2);';
-}
-function deadlineText(dl) {
-  if (!dl) return '';
-  const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(dl);
-  const diff = Math.ceil((d - today) / 86400000);
-  const label = dl.replace(/-/g,'/');
-  if (diff < 0) return `⚠️ ${label}（${Math.abs(diff)}日超過）`;
-  if (diff === 0) return `🔔 ${label}（今日）`;
-  if (diff <= 3) return `⏰ ${label}（あと${diff}日）`;
-  return `📅 ${label}`;
-}
-
-function renderTaskList() {
-  let f = tasks;
-  if (taskFilter === 'self') f = tasks.filter(t => (t.owners||[t.owner]).includes('自分') && t.status !== 'done');
-  else if (taskFilter === 'del') f = tasks.filter(t => !(t.owners||[t.owner]).includes('自分') && t.status !== 'done');
-  else if (taskFilter === 'done') f = tasks.filter(t => t.status === 'done');
-  else f = tasks.filter(t => t.status !== 'done');
-  const el = document.getElementById('taskList'); if (!el) return;
-  if (!f.length) { el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2);">タスクがありません</div>'; return; }
-  const stc = {todo:'#378ADD', inprogress:'#1D9E75', done:'#888780'};
-  el.innerHTML = f.map(t => {
-    const owners = t.owners || (t.owner ? [t.owner] : []);
-    const tags   = t.tags   || [];
-    const prog   = t.progress != null ? t.progress : 0;
-    const progCol = prog >= 100 ? '#888780' : prog >= 60 ? '#1D9E75' : prog >= 30 ? '#EF9F27' : '#378ADD';
-    return `<div class="task-item" draggable="true" data-id="${t.id}"
-      ondragstart="dStart(event,${t.id})" ondragover="dOver(event)" ondrop="dDrop(event,${t.id})" ondragend="dEnd(event)">
-      <div class="task-drag" title="ドラッグして並び替え">⠿</div>
-      <div class="task-dot" style="background:${stc[t.status]};"></div>
-      <div class="task-body">
-        <div class="task-title" style="${t.status==='done'?'text-decoration:line-through;opacity:.5;':''}">${t.title}</div>
-        <div class="task-meta">
-          <span class="badge" style="background:${CAT_COLORS[t.category]}22;color:${CAT_COLORS[t.category]};">${CATS[t.category]}</span>
-          ${t.urgency ? '<span class="badge" style="background:#fff0f0;color:#c44;">緊急</span>' : ''}
-          ${t.importance ? '<span class="badge" style="background:#eff6ff;color:#2563eb;">重要</span>' : ''}
-          <span style="font-size:11px;color:var(--text2);">${t.effort}h</span>
-          ${owners.map(o => `<span class="badge" style="background:var(--bg2);color:var(--text2);border:1px solid var(--border);">👤${o}</span>`).join('')}
-          ${tags.map(tg => `<span class="badge" style="background:#f0f0ff;color:#5050bb;">🏷${tg}</span>`).join('')}
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:5px;">
-          <div class="task-prog-bar" style="flex:1;"><div class="task-prog-fill" style="width:${prog}%;background:${progCol};"></div></div>
-          <span style="font-size:10px;color:${progCol};font-weight:600;min-width:30px;">${prog}%</span>
-        </div>
-        ${t.deadline ? `<div class="task-deadline" style="${deadlineColor(t.deadline)}">${deadlineText(t.deadline)}</div>` : ''}
-        <div class="deadline-edit no-print" id="dl-edit-${t.id}" style="display:none;">
-          <span style="font-size:11px;color:var(--text2);">期限:</span>
-          <input type="date" value="${t.deadline||''}" id="dl-input-${t.id}" style="font-size:11px;padding:3px 7px;">
-          <button class="sm" onclick="saveDeadline(${t.id})">保存</button>
-          <button class="sm" onclick="toggleDeadlineEdit(${t.id})">閉じる</button>
-        </div>
-        <div class="effort-edit-row no-print" id="ef-edit-${t.id}" style="display:none;">
-          <span style="font-size:11px;color:var(--text2);">工数:</span>
-          <input type="number" min=".5" max="40" step=".5" value="${t.effort}" id="ef-input-${t.id}" style="font-size:11px;padding:3px 7px;width:60px;">
-          <span style="font-size:11px;color:var(--text2);">h</span>
-          <button class="sm" onclick="saveEffort(${t.id})">保存</button>
-          <button class="sm" onclick="toggleEffortEdit(${t.id})">閉じる</button>
-        </div>
-        <div class="prog-edit-row no-print" id="pg-edit-${t.id}" style="display:none;">
-          <span style="font-size:11px;color:var(--text2);">進捗:</span>
-          <input type="range" min="0" max="100" step="5" value="${prog}" id="pg-input-${t.id}" style="flex:1;accent-color:var(--green);"
-            oninput="document.getElementById('pg-val-${t.id}').textContent=this.value+'%'">
-          <span id="pg-val-${t.id}" style="font-size:11px;color:var(--text2);min-width:32px;">${prog}%</span>
-          <button class="sm" onclick="saveProgress(${t.id})">保存</button>
-          <button class="sm" onclick="toggleProgressEdit(${t.id})">閉じる</button>
-        </div>
-      </div>
-      <div class="task-actions no-print">
-        <select onchange="chgSt(${t.id},this.value)" style="font-size:11px;padding:2px 4px;">
-          <option value="todo"${t.status==='todo'?' selected':''}>未着手</option>
-          <option value="inprogress"${t.status==='inprogress'?' selected':''}>進行中</option>
-          <option value="done"${t.status==='done'?' selected':''}>完了</option>
-        </select>
-        <button class="sm" onclick="toggleProgressEdit(${t.id})">📊 進捗</button>
-        <button class="sm" onclick="toggleEffortEdit(${t.id})">⏱ 工数</button>
-        <button class="sm" onclick="toggleDeadlineEdit(${t.id})">📅 期限</button>
-        <button class="sm danger" onclick="delTask(${t.id})">削除</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function toggleDeadlineEdit(id) {
-  const el = document.getElementById('dl-edit-'+id);
-  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
-}
-function toggleEffortEdit(id) {
-  const el = document.getElementById('ef-edit-'+id);
-  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
-}
-function toggleProgressEdit(id) {
-  const el = document.getElementById('pg-edit-'+id);
-  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
-}
-function saveDeadline(id) {
-  const t = tasks.find(x => x.id === id); if (!t) return;
-  const inp = document.getElementById('dl-input-'+id);
-  if (inp) t.deadline = inp.value;
-  save(); renderTaskList(); ra();
-}
-function saveEffort(id) {
-  const t = tasks.find(x => x.id === id); if (!t) return;
-  const inp = document.getElementById('ef-input-'+id);
-  if (inp) t.effort = parseFloat(inp.value) || t.effort;
-  save(); renderTaskList(); ra();
-}
-function saveProgress(id) {
-  const t = tasks.find(x => x.id === id); if (!t) return;
-  const inp = document.getElementById('pg-input-'+id);
-  if (inp) t.progress = parseInt(inp.value);
-  save(); renderTaskList(); ra();
-}
-function chgSt(id, s) { const t = tasks.find(x => x.id === id); if (t) { t.status = s; save(); renderTaskList(); ra(); } }
-function delTask(id) { tasks = tasks.filter(x => x.id !== id); save(); renderTaskList(); ra(); }
-function addTask() {
-  const title = document.getElementById('tTitle').value.trim();
-  if (!title) { document.getElementById('tTitle').focus(); return; }
-  tasks.push({
-    id: nid++, title,
-    category: document.getElementById('tCat').value,
-    urgency: document.getElementById('tUrgent').checked,
-    importance: document.getElementById('tImportant').checked,
-    effort: parseFloat(document.getElementById('tEffort').value) || 1,
-    status: 'todo',
-    owners: readMck('tOwners'),
-    tags:   readMck('tTags'),
-    progress: parseInt(document.getElementById('tProgress').value) || 0,
-    deadline: document.getElementById('tDeadline').value
-  });
-  document.getElementById('tTitle').value = '';
-  document.getElementById('tUrgent').checked = false;
-  document.getElementById('tImportant').checked = true;
-  document.getElementById('tEffort').value = '2';
-  document.getElementById('tDeadline').value = '';
-  document.getElementById('tProgress').value = '0';
-  document.getElementById('tProgressVal').textContent = '0%';
-  resetMck('tOwners', ['自分']);
-  resetMck('tTags', []);
-  save(); renderTaskList(); ra();
-}
-
-// ==================== DRAG & DROP ====================
-function dStart(e, id) {
-  dragSrc = id;
-  e.currentTarget.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-}
-function dOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  document.querySelectorAll('.task-item').forEach(el => el.classList.remove('drag-over'));
-  e.currentTarget.classList.add('drag-over');
-}
-function dDrop(e, targetId) {
-  e.preventDefault();
-  if (dragSrc === null || dragSrc === targetId) return;
-  const srcIdx = tasks.findIndex(t => t.id === dragSrc);
-  const tgtIdx = tasks.findIndex(t => t.id === targetId);
-  if (srcIdx === -1 || tgtIdx === -1) return;
-  const [removed] = tasks.splice(srcIdx, 1);
-  tasks.splice(tgtIdx, 0, removed);
-  save(); renderTaskList();
-}
-function dEnd(e) {
-  dragSrc = null;
-  document.querySelectorAll('.task-item').forEach(el => {
-    el.classList.remove('dragging');
-    el.classList.remove('drag-over');
-  });
-}
-
-// ==================== WBS (Timeline) ====================
-function renderWBS() {
-  const el = document.getElementById('wbsContent'); if (!el) return;
-
-  const today = new Date(); today.setHours(0,0,0,0);
-  const PAST_DAYS = 7;
-  const FUTURE_DAYS = 28;
-  const TOTAL_DAYS = PAST_DAYS + FUTURE_DAYS; // 35
-  const COL_W = (100 / TOTAL_DAYS).toFixed(4); // % per day
-
-  function pct(dayOffset) {
-    return (((dayOffset + PAST_DAYS) / TOTAL_DAYS) * 100).toFixed(3);
-  }
-  const todayPct = parseFloat(pct(0));
-  const WDAYS_SHORT = ['日','月','火','水','木','金','土'];
-
-  // ── Build 3-row header ──
-  let gridLines = '';
-  let colBgs = '';
-  let monthBand = '';
-  let dayBand   = '';
-  let wdayBand  = '';
-
-  let prevMonth = -1;
-  let monthStartPct = 0;
-
-  for (let i = -PAST_DAYS; i <= FUTURE_DAYS; i++) {
-    const d = new Date(today); d.setDate(today.getDate() + i);
-    const p   = parseFloat(pct(i));
-    const cw  = parseFloat(COL_W);
-    const isToday = i === 0;
-    const isSun = d.getDay() === 0;
-    const isSat = d.getDay() === 6;
-
-    gridLines += `<div style="position:absolute;left:${p.toFixed(3)}%;top:0;bottom:0;width:1px;background:var(--border);opacity:${(isSun||isSat)?0.7:0.3};pointer-events:none;z-index:1;"></div>`;
-
-    if (isToday) {
-      colBgs += `<div style="position:absolute;left:${p.toFixed(3)}%;width:${cw.toFixed(3)}%;top:0;bottom:0;background:#ffe8e8;pointer-events:none;z-index:0;"></div>`;
-    } else if (isSun || isSat) {
-      colBgs += `<div style="position:absolute;left:${p.toFixed(3)}%;width:${cw.toFixed(3)}%;top:0;bottom:0;background:#f5f5f4;pointer-events:none;z-index:0;"></div>`;
-    }
-
-    const dayCol = isToday ? '#E24B4A' : isSun ? '#c44' : isSat ? '#4477cc' : 'var(--text2)';
-    dayBand += `<div style="position:absolute;left:${p.toFixed(3)}%;width:${cw.toFixed(3)}%;top:33.3%;height:33.3%;display:flex;align-items:center;justify-content:center;font-size:${isToday?9:8}px;font-weight:${isToday?700:400};color:${dayCol};z-index:2;line-height:1;">${d.getDate()}</div>`;
-
-    const wdLabel = isToday ? '今' : WDAYS_SHORT[d.getDay()];
-    wdayBand += `<div style="position:absolute;left:${p.toFixed(3)}%;width:${cw.toFixed(3)}%;top:66.6%;height:33.4%;display:flex;align-items:center;justify-content:center;font-size:${isToday?9:8}px;font-weight:${isToday?700:400};color:${dayCol};z-index:2;line-height:1;">${wdLabel}</div>`;
-
-    if (d.getMonth() !== prevMonth) {
-      if (prevMonth !== -1) {
-        const monthW = (p - monthStartPct).toFixed(3);
-        monthBand += `<div style="position:absolute;left:${monthStartPct.toFixed(3)}%;width:${monthW}%;top:0;height:33.3%;display:flex;align-items:center;padding-left:4px;font-size:9px;font-weight:600;color:var(--text);border-right:1px solid var(--border2);z-index:2;">${prevMonth+1}月</div>`;
-      }
-      prevMonth = d.getMonth();
-      monthStartPct = p;
-    }
-    if (i === FUTURE_DAYS) {
-      const monthW = (p + cw - monthStartPct).toFixed(3);
-      monthBand += `<div style="position:absolute;left:${monthStartPct.toFixed(3)}%;width:${monthW}%;top:0;height:33.3%;display:flex;align-items:center;padding-left:4px;font-size:9px;font-weight:600;color:var(--text);z-index:2;">${prevMonth+1}月</div>`;
-    }
-  }
-
-  const todayHighlight = `<div style="position:absolute;left:${todayPct.toFixed(3)}%;width:${COL_W}%;top:0;bottom:0;background:#ffdddd;z-index:0;pointer-events:none;"></div>`;
-  const todayLine = `<div style="position:absolute;left:${todayPct.toFixed(3)}%;top:0;bottom:0;width:2px;background:#E24B4A;opacity:.6;z-index:5;pointer-events:none;"></div>`;
-
-  const stLabel = {todo:'未着手', inprogress:'進行中', done:'完了'};
-  const stColor = {todo:'#378ADD', inprogress:'#1D9E75', done:'#888780'};
-
-  let rows = '';
-  let wbsNo = 1;
-
-  Object.keys(CATS).forEach(cat => {
-    const catTasks = tasks.filter(t => t.category === cat);
-    if (!catTasks.length) return;
-    const totalH = catTasks.reduce((s,t) => s + t.effort, 0);
-    const avgProg = Math.round(catTasks.reduce((s,t) => s + (t.progress||0), 0) / catTasks.length);
-
-    rows += `<div class="wbs-tl-cat">
-      <div class="wbs-tl-label" style="border-left:3px solid ${CAT_COLORS[cat]};">
-        <span style="color:${CAT_COLORS[cat]};font-weight:600;font-size:11px;">■ ${CATS[cat]}</span>
-        <span style="font-size:10px;color:var(--text2);">${catTasks.length}件 · ${totalH}h · 平均${avgProg}%</span>
-      </div>
-      <div class="wbs-tl-chart" style="background:${CAT_COLORS[cat]}06;">${colBgs}${gridLines}${todayLine}</div>
-    </div>`;
-
-    catTasks.forEach(t => {
-      const owners = t.owners || (t.owner ? [t.owner] : []);
-      const prog   = t.progress != null ? t.progress : 0;
-      const progCol = prog >= 100 ? '#888780' : prog >= 60 ? '#1D9E75' : prog >= 30 ? '#EF9F27' : '#378ADD';
-
-      let chartContent = colBgs + gridLines + todayLine;
-
-      if (t.deadline) {
-        const dl = new Date(t.deadline); dl.setHours(0,0,0,0);
-        const diff = Math.round((dl - today) / 86400000);
-        const clamped = Math.max(-PAST_DAYS, Math.min(FUTURE_DAYS, diff));
-        const dp = parseFloat(pct(clamped));
-        const tp = todayPct;
-
-        const isOverdue = diff < 0;
-        const isSoon    = !isOverdue && diff <= 3;
-        const dotCol    = isOverdue ? '#E24B4A' : isSoon ? '#EF9F27' : CAT_COLORS[cat];
-        const dlLabel   = isOverdue ? `${Math.abs(diff)}日超過` : diff === 0 ? '今日' : `${diff}日後`;
-
-        const barFrom = parseFloat(pct(-PAST_DAYS));
-        const barTo   = dp;
-        const barW    = Math.abs(barTo - barFrom);
-        const fillW   = barW * prog / 100;
-
-        chartContent += `
-          <div style="position:absolute;left:${barFrom.toFixed(3)}%;width:${barW.toFixed(3)}%;height:8px;top:38%;background:${dotCol}22;border-radius:4px;z-index:3;"></div>
-          <div style="position:absolute;left:${barFrom.toFixed(3)}%;width:${fillW.toFixed(3)}%;height:8px;top:38%;background:${progCol}99;border-radius:4px;z-index:4;"></div>
-          <div style="position:absolute;left:${dp.toFixed(3)}%;top:26%;transform:translateX(-50%);z-index:6;width:14px;height:14px;border-radius:50%;background:${dotCol};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.3);"></div>
-          <div style="position:absolute;left:${dp.toFixed(3)}%;top:calc(26% + 16px);transform:translateX(-50%);z-index:6;font-size:8px;color:${dotCol};white-space:nowrap;font-weight:600;">${dlLabel}</div>
-          <div style="position:absolute;left:${barFrom.toFixed(3)}%;top:58%;font-size:8px;color:${progCol};font-weight:600;z-index:5;">${prog}%</div>`;
-      } else {
-        const barFrom = parseFloat(pct(-PAST_DAYS));
-        const barW    = parseFloat(pct(FUTURE_DAYS)) - barFrom;
-        const fillW   = barW * prog / 100;
-        chartContent += `
-          <div style="position:absolute;left:${barFrom.toFixed(3)}%;width:${barW.toFixed(3)}%;height:8px;top:38%;background:#ddd;border-radius:4px;z-index:3;"></div>
-          <div style="position:absolute;left:${barFrom.toFixed(3)}%;width:${fillW.toFixed(3)}%;height:8px;top:38%;background:${progCol}99;border-radius:4px;z-index:4;"></div>
-          <div style="position:absolute;left:${todayPct.toFixed(3)}%;top:26%;transform:translate(-50%,-0%);z-index:5;width:10px;height:10px;border-radius:50%;background:#bbb;border:2px solid white;"></div>
-          <div style="position:absolute;left:${barFrom.toFixed(3)}%;top:58%;font-size:8px;color:${progCol};font-weight:600;z-index:5;">${prog}%</div>`;
-      }
-
-      const q = t.urgency && t.importance ? 'Q1' : !t.urgency && t.importance ? 'Q2' : t.urgency ? 'Q3' : 'Q4';
-      const qCol = q==='Q1'?'#c44':q==='Q2'?'#2563eb':q==='Q3'?'#b45309':'#888';
-
-      rows += `<div class="wbs-tl-task">
-        <div class="wbs-tl-label">
-          <div style="display:flex;align-items:flex-start;gap:4px;">
-            <span style="color:var(--text3);font-size:9px;font-family:monospace;flex-shrink:0;margin-top:1px;">${String(wbsNo++).padStart(2,'0')}</span>
-            <span style="font-size:11px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.title}">${t.title}</span>
-          </div>
-          <div style="display:flex;gap:4px;align-items:center;margin-top:2px;flex-wrap:wrap;">
-            <span style="font-size:9px;color:${stColor[t.status]};border:1px solid ${stColor[t.status]};padding:0 3px;border-radius:2px;line-height:1.6;">${stLabel[t.status]}</span>
-            <span style="font-size:9px;color:${qCol};font-weight:600;">${q}</span>
-            <span style="font-size:9px;color:var(--text2);">${t.effort}h</span>
-          </div>
-          <div style="margin-top:3px;">
-            <div style="height:3px;background:var(--border);border-radius:2px;"><div style="height:3px;width:${prog}%;background:${progCol};border-radius:2px;"></div></div>
-            <div style="font-size:8px;color:${progCol};font-weight:600;margin-top:1px;">${prog}%  ${owners.map(o=>`👤${o}`).join(' ')}</div>
-          </div>
-        </div>
-        <div class="wbs-tl-chart">${chartContent}</div>
-      </div>`;
-    });
-  });
-
-  const totalAll = tasks.reduce((s,t) => s + t.effort, 0);
-  const avgProgAll = tasks.length ? Math.round(tasks.reduce((s,t) => s + (t.progress||0), 0) / tasks.length) : 0;
-
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
-      <div style="font-size:13px;font-weight:500;">WBS タイムライン <span style="font-size:11px;font-weight:400;color:var(--text2);">（7日前〜今日〜28日後）</span></div>
-      <div style="font-size:11px;color:var(--text2);">総工数: <strong style="color:var(--text);">${totalAll}h</strong> · ${tasks.length}件 · 全体進捗: <strong style="color:var(--text);">${avgProgAll}%</strong></div>
-    </div>
-    <div class="wbs-timeline">
-      <div class="wbs-tl-header">
-        <div class="wbs-tl-label" style="font-size:10px;color:var(--text2);font-weight:500;justify-content:center;align-items:center;text-align:center;">
-          <div style="font-size:9px;color:var(--text3);">月</div>
-          <div style="font-size:9px;color:var(--text3);">日</div>
-          <div style="font-size:9px;color:var(--text3);">曜</div>
-        </div>
-        <div class="wbs-tl-chart" style="position:relative;">
-          ${todayHighlight}${monthBand}${dayBand}${wdayBand}${gridLines}
-          <div style="position:absolute;left:${todayPct.toFixed(3)}%;top:0;bottom:0;width:2px;background:#E24B4A;opacity:.8;z-index:9;"></div>
-        </div>
-      </div>
-      ${rows}
-    </div>
-    <div style="margin-top:10px;display:flex;gap:14px;font-size:10px;color:var(--text2);flex-wrap:wrap;">
-      <span>● 締切マーカー：<span style="color:#E24B4A;">超過</span> / <span style="color:#EF9F27;">3日以内</span> / <span style="color:#1D9E75;">通常</span></span>
-      <span>進捗バー（塗り）= 進捗率</span>
-      <span style="color:#E24B4A;font-weight:500;">│ = 今日</span>
-    </div>`;
-}
-
-function printWBS() {
-  renderWBS();
-  const allPanels = document.querySelectorAll('.panel');
-  const prevStates = [];
-  allPanels.forEach(p => { prevStates.push(p.classList.contains('active')); p.classList.remove('active'); });
-  document.getElementById('p-wbs').classList.add('active');
-  document.body.classList.add('print-wbs-only');
-  setTimeout(() => {
-    window.print();
-    allPanels.forEach((p, i) => { if (prevStates[i]) p.classList.add('active'); });
-    document.body.classList.remove('print-wbs-only');
-  }, 150);
-}
-
-// ==================== STRESS ====================
-function updateStressMeta() {
-  const vals = Object.values(smxData).map(d => d.score).filter(Boolean);
-  const avg = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
-  const alerts = vals.filter(s => s >= 4).length;
-  sv('stressAvg', avg ? avg.toFixed(1) : '--');
-  sv('alertCnt', alerts);
-  const ac = document.getElementById('alertCard');
-  const al = document.getElementById('alertLbl');
-  if (ac) { ac.style.background = alerts > 0 ? '#fff0f0' : ''; ac.style.borderColor = alerts > 0 ? '#fcc' : ''; }
-  if (al) al.style.color = alerts > 0 ? '#c44' : '';
-  const la = LOCS.map(l => { const sc = AREAS.map(a => smxData[`${l}_${a}`]?.score).filter(Boolean); return {l, a: sc.length ? sc.reduce((a,b)=>a+b,0)/sc.length : 0}; });
-  const tl = la.sort((a,b) => b.a - a.a)[0];
-  sv('topLoc', tl?.a > 0 ? `${tl.l} (${tl.a.toFixed(1)})` : '--');
-  const aa = AREAS.map(a => { const sc = LOCS.map(l => smxData[`${l}_${a}`]?.score).filter(Boolean); return {a, v: sc.length ? sc.reduce((x,y)=>x+y,0)/sc.length : 0}; });
-  const ta = aa.sort((a,b) => b.v - a.v)[0];
-  sv('topArea', ta?.v > 0 ? `${ta.a} (${ta.v.toFixed(1)})` : '--');
-}
-
-function renderSmx() {
-  const table = document.getElementById('smxTable'); if (!table) return;
-  let html = '<thead><tr><th class="row-head">場所 \\ 部位</th>';
-  AREAS.forEach(a => {
-    const sc = LOCS.map(l => smxData[`${l}_${a}`]?.score).filter(Boolean);
-    const avg = sc.length ? sc.reduce((x,y)=>x+y,0)/sc.length : null;
-    const col = avg ? SC[Math.round(avg)] : null;
-    html += `<th>${a}${avg ? `<br><span style="font-size:9px;color:${col};font-family:monospace;">${avg.toFixed(1)}</span>` : ''}</th>`;
-  });
-  html += '</tr></thead><tbody>';
-  LOCS.forEach(loc => {
-    const lsc = AREAS.map(a => smxData[`${loc}_${a}`]?.score).filter(Boolean);
-    const lavg = lsc.length ? lsc.reduce((a,b)=>a+b,0)/lsc.length : null;
-    const lcol = lavg ? SC[Math.round(lavg)] : null;
-    html += `<tr><th class="row-head">${loc}${lavg ? `<br><span style="font-size:9px;color:${lcol};font-family:monospace;font-weight:400;">${lavg.toFixed(1)}</span>` : ''}</th>`;
-    AREAS.forEach(area => {
-      const key = `${loc}_${area}`;
-      const d = smxData[key];
-      const s = d?.score;
-      const col = s ? SC[s] : null;
-      const isSel = selCell?.loc === loc && selCell?.area === area;
-      html += `<td class="smx-cell${isSel?' smx-selected':''}" onclick="selCellFn('${loc}','${area}')" style="${isSel?`outline:2px solid ${col||'#333'};`:''}"  >`;
-      if (s) {
-        html += `<div class="smx-score" style="background:${col}33;color:${col};">${s}</div>`;
-        html += `<div class="smx-lbl">${SL[s]}</div>`;
-      } else {
-        html += `<div class="smx-score" style="background:#eee;color:#aaa;font-size:16px;">+</div>`;
-        html += `<div class="smx-lbl" style="color:#bbb;">未記録</div>`;
-      }
-      html += '</td>';
-    });
-    html += '</tr>';
-  });
-  html += '</tbody>';
-  table.innerHTML = html;
-}
-
-function selCellFn(loc, area) {
-  selCell = {loc, area};
-  selScore = smxData[`${loc}_${area}`]?.score || null;
-  const ep = document.getElementById('editPanel'); if (ep) ep.style.display = 'block';
-  const d = smxData[`${loc}_${area}`];
-  sv('editTitle', `${loc} × ${area}${d ? ` — 現在: ${SL[d.score]}` : '（未記録）'}`);
-  const sn = document.getElementById('stressNote'); if (sn) sn.value = d?.note || '';
-  renderScoreBtns(); renderSmx();
-  ep?.scrollIntoView({behavior:'smooth', block:'nearest'});
-}
-
-function renderScoreBtns() {
-  const el = document.getElementById('scoreBtns'); if (!el) return;
-  el.innerHTML = [1,2,3,4,5].map(s => {
-    const col = SC[s], pk = selScore === s;
-    return `<button class="score-btn" onclick="ps(${s})" style="background:${col}${pk?'44':'1A'};color:${col};border-color:${pk?col:'transparent'};">
-      <div style="font-size:16px;font-weight:500;">${s}</div>
-      <div style="font-size:9px;">${SL[s]}</div>
-    </button>`;
-  }).join('');
-}
-
-function ps(s) { selScore = s; renderScoreBtns(); }
-
-function saveStress() {
-  if (!selCell || !selScore) return;
-  const {loc, area} = selCell;
-  const key = `${loc}_${area}`;
-  const note = document.getElementById('stressNote')?.value || '';
-  const ts = todayStr();
-  smxData[key] = {score: selScore, note, ts};
-  slog.unshift({id: slogN++, loc, area, score: selScore, note, ts});
-  save(); closeEdit(); updateStressMeta(); renderSmx(); renderSlog(); updateMetrics();
-}
-
-function closeEdit() {
-  selCell = null; selScore = null;
-  const ep = document.getElementById('editPanel'); if (ep) ep.style.display = 'none';
-  renderSmx();
-}
-
-function renderSlog() {
-  const el = document.getElementById('slogEl'); if (!el) return;
-  if (!slog.length) { el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text2);">まだ記録がありません</div>'; return; }
-  el.innerHTML = slog.slice(0, 15).map(e => {
-    const col = SC[e.score];
-    return `<div class="log-item">
-      <div class="log-dot" style="background:${col}22;color:${col};">${e.score}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:500;">${e.loc} × ${e.area} <span style="font-size:11px;font-weight:400;color:${col};">${SL[e.score]}</span></div>
-        ${e.note ? `<div style="font-size:11px;color:var(--text2);">${e.note}</div>` : ''}
-      </div>
-      <div style="font-size:11px;color:var(--text3);flex-shrink:0;">${e.ts}</div>
-    </div>`;
-  }).join('');
-}
-
-// ==================== PRINT ALL ====================
-function printAll() {
-  const panels = ['p-dash','p-tasks','p-wbs','p-stress'];
-  renderWBS();
-  document.body.classList.add('printing-all');
-  panels.forEach(id => { document.getElementById(id).classList.add('active'); });
-  document.getElementById('p-export').classList.remove('active');
-  setTimeout(() => {
-    window.print();
-    panels.forEach(id => { document.getElementById(id).classList.remove('active'); });
-    document.getElementById('p-export').classList.add('active');
-    document.body.classList.remove('printing-all');
-  }, 200);
-}
-
-// ==================== EXPORT / IMPORT JSON ====================
-function exportJSON() {
-  const data = { tasks, smxData, slog, settings: { daily: document.getElementById('dailyCap')?.value, weekly: document.getElementById('weeklyCap')?.value } };
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `csm_backup_${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-}
-function importJSON(event) {
-  const file = event.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (data.tasks) tasks = data.tasks;
-      if (data.smxData) smxData = data.smxData;
-      if (data.slog) slog = data.slog;
-      if (data.settings) {
-        if (document.getElementById('dailyCap')) document.getElementById('dailyCap').value = data.settings.daily || 8;
-        if (document.getElementById('weeklyCap')) document.getElementById('weeklyCap').value = data.settings.weekly || 40;
-      }
-      nid = tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
-      save(); ra();
-      alert('データを読み込みました。');
-    } catch(err) { alert('読み込みに失敗しました: '+err.message); }
-  };
-  reader.readAsText(file);
-}
-
-// ==================== REFRESH ALL ====================
-function ra() {
-  updateMetrics(); renderMatrix(); renderChart(); renderDashStress();
-}
-
-// Print all: special CSS
-const printStyle = document.createElement('style');
-printStyle.textContent = `
-body.printing-all .panel { display: block !important; }
-body.printing-all #p-export { display: none !important; }
-@media print {
-  body.printing-all .panel { display: block !important; }
-  body.printing-all .panel + .panel { page-break-before: always; }
-  body.printing-all .tabs, body.printing-all .header { display: none; }
-  body.printing-all .no-print { display: none !important; }
-  /* WBS only print */
-  body.print-wbs-only .panel { display: none !important; }
-  body.print-wbs-only #p-wbs { display: block !important; }
-  body.print-wbs-only .tabs, body.print-wbs-only .header { display: none !important; }
-  body.print-wbs-only .no-print { display: none !important; }
-  /* Timeline print adjustments */
-  .wbs-tl-label { width: 160px !important; }
-  .wbs-timeline { font-size: 10px !important; }
-}`;
-document.head.appendChild(printStyle);
-
-// Initial render
-ra();
-</script>
+<script src="assets/app.js"></script>
 </body>
 </html>
