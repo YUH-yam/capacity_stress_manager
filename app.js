@@ -191,11 +191,12 @@ function loadFromSheetsByJsonp() {
 
     window[callbackName] = function(data) {
       cleanup();
-      if (!data || data.error || !data.tasks) {
+      const payload = unwrapCsmPayload(data);
+      if (!payload || payload.error) {
         resolve(null);
         return;
       }
-      resolve(data);
+      resolve(payload);
     };
 
     script.onerror = function() {
@@ -263,8 +264,41 @@ function toFiniteNumber(value, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function normalizeTaskForUi(task, idx) {
+function parseMaybeJson(value) {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  try { return JSON.parse(trimmed); } catch(e) { return value; }
+}
+
+function unwrapCsmPayload(data) {
+  let current = parseMaybeJson(data);
+  if (!current || typeof current !== 'object') return null;
+
+  ['payload','data','csmData'].forEach(key => {
+    if (current && typeof current === 'object' && Object.prototype.hasOwnProperty.call(current, key)) {
+      const parsed = parseMaybeJson(current[key]);
+      if (parsed && typeof parsed === 'object') current = parsed;
+    }
+  });
+
+  return current && typeof current === 'object' ? current : null;
+}
+
+function isLegacyPayload(data) {
+  if (!data || typeof data !== 'object') return false;
+  const version = toFiniteNumber(data.schemaVersion, 0);
+  return version < 2 && !(data.catalogs || data.settings?.catalogs);
+}
+
+function normalizeStressScore(score, legacy) {
+  const s = Math.max(1, Math.min(5, Math.round(toFiniteNumber(score, 3))));
+  return legacy ? 6 - s : s;
+}
+
+function normalizeTaskForUi(task, idx, options={}) {
   const t = task && typeof task === 'object' ? task : {};
+  const legacy = Boolean(options.legacy);
   const id = toFiniteNumber(t.id, idx + 1);
   const category = resolveCategoryId(t.category);
   const owners = Array.isArray(t.owners)
@@ -279,7 +313,7 @@ function normalizeTaskForUi(task, idx) {
     title: String(t.title || '無題タスク'),
     category,
     urgency: Boolean(t.urgency),
-    importance: Boolean(t.importance),
+    importance: t.importance === undefined ? (legacy ? true : false) : Boolean(t.importance),
     effort: roundToTenth(Math.max(0.1, toFiniteNumber(t.effort, 1))),
     status,
     owners: owners.length ? owners : ['自分'],
@@ -290,14 +324,15 @@ function normalizeTaskForUi(task, idx) {
   };
 }
 
-function normalizeStressForUi(remote) {
+function normalizeStressForUi(remote, options={}) {
   const base = defaultStress();
   const src = remote && typeof remote === 'object' ? remote : {};
+  const legacy = Boolean(options.legacy);
 
   Object.keys(src).forEach(key => {
     const item = src[key];
     if (!item || typeof item !== 'object') return;
-    const score = Math.max(1, Math.min(5, Math.round(toFiniteNumber(item.score, 3))));
+    const score = normalizeStressScore(item.score, legacy);
     base[key] = {
       score,
       note: String(item.note || ''),
@@ -308,11 +343,12 @@ function normalizeStressForUi(remote) {
   return base;
 }
 
-function normalizeSlogForUi(remote) {
+function normalizeSlogForUi(remote, options={}) {
   if (!Array.isArray(remote)) return [];
+  const legacy = Boolean(options.legacy);
   return remote.map((item, idx) => {
     const e = item && typeof item === 'object' ? item : {};
-    const score = Math.max(1, Math.min(5, Math.round(toFiniteNumber(e.score, 3))));
+    const score = normalizeStressScore(e.score, legacy);
     return {
       id: toFiniteNumber(e.id, idx + 1),
       loc: String(e.loc || ''),
@@ -325,7 +361,9 @@ function normalizeSlogForUi(remote) {
 }
 
 function applyRemoteData(data) {
+  data = unwrapCsmPayload(data);
   if (!data || typeof data !== 'object') return false;
+  const legacy = isLegacyPayload(data);
 
   const remoteCatalogs = data.catalogs || data.settings?.catalogs;
   if (remoteCatalogs) {
@@ -333,16 +371,16 @@ function applyRemoteData(data) {
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'tasks')) {
-    tasks = Array.isArray(data.tasks) ? data.tasks.map(normalizeTaskForUi) : [];
+    tasks = Array.isArray(data.tasks) ? data.tasks.map((task, idx) => normalizeTaskForUi(task, idx, {legacy})) : [];
     ensureCatalogsCoverTasks(tasks);
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'smxData')) {
-    smxData = normalizeStressForUi(data.smxData);
+    smxData = normalizeStressForUi(data.smxData, {legacy});
   }
 
   if (Object.prototype.hasOwnProperty.call(data, 'slog')) {
-    slog = normalizeSlogForUi(data.slog);
+    slog = normalizeSlogForUi(data.slog, {legacy});
   }
 
   const maxTaskId = tasks.reduce((max, t) => Math.max(max, toFiniteNumber(t.id, 0)), 0);
@@ -704,10 +742,12 @@ function load() {
   try {
     const c = localStorage.getItem('csm_catalogs');
     if (c) catalogs = normalizeCatalogs(JSON.parse(c));
+    const localSchemaVersion = toFiniteNumber(localStorage.getItem('csm_schema_version'), 0);
+    const legacyLocal = localSchemaVersion < 2 && !c;
     const t = localStorage.getItem('csm_tasks');
     if (t) {
       const parsedTasks = JSON.parse(t);
-      tasks = Array.isArray(parsedTasks) ? parsedTasks.map(normalizeTaskForUi) : [];
+      tasks = Array.isArray(parsedTasks) ? parsedTasks.map((task, idx) => normalizeTaskForUi(task, idx, {legacy: legacyLocal})) : [];
     } else {
       tasks = tasks.map(normalizeTaskForUi);
     }
@@ -715,9 +755,9 @@ function load() {
     const n = localStorage.getItem('csm_nid');
     if (n) nid = parseInt(n);
     const s = localStorage.getItem('csm_smx');
-    if (s) smxData = normalizeStressForUi(JSON.parse(s));
+    if (s) smxData = normalizeStressForUi(JSON.parse(s), {legacy: legacyLocal});
     const sl = localStorage.getItem('csm_slog');
-    if (sl) slog = normalizeSlogForUi(JSON.parse(sl));
+    if (sl) slog = normalizeSlogForUi(JSON.parse(sl), {legacy: legacyLocal});
     const sn = localStorage.getItem('csm_slogN');
     if (sn) slogN = parseInt(sn);
   } catch(e) {}
@@ -1485,14 +1525,16 @@ function importJSON(event) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const data = JSON.parse(e.target.result);
+      const data = unwrapCsmPayload(JSON.parse(e.target.result));
+      if (!data) throw new Error('CSMデータ形式ではありません。');
+      const legacy = isLegacyPayload(data);
       if (data.catalogs || data.settings?.catalogs) catalogs = normalizeCatalogs(data.catalogs || data.settings.catalogs);
       if (data.tasks) {
-        tasks = Array.isArray(data.tasks) ? data.tasks.map(normalizeTaskForUi) : [];
+        tasks = Array.isArray(data.tasks) ? data.tasks.map((task, idx) => normalizeTaskForUi(task, idx, {legacy})) : [];
         ensureCatalogsCoverTasks(tasks);
       }
-      if (data.smxData) smxData = normalizeStressForUi(data.smxData);
-      if (data.slog) slog = normalizeSlogForUi(data.slog);
+      if (data.smxData) smxData = normalizeStressForUi(data.smxData, {legacy});
+      if (data.slog) slog = normalizeSlogForUi(data.slog, {legacy});
       if (data.settings) {
         if (document.getElementById('dailyCap')) document.getElementById('dailyCap').value = formatHours(data.settings.daily || 8);
         if (document.getElementById('weeklyCap')) document.getElementById('weeklyCap').value = formatHours(data.settings.weekly || 40);
