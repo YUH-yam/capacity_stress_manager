@@ -2,6 +2,7 @@
 let gasUrl = '';
 let syncTimer = null;
 let isSyncing = false;
+let lastSheetLoadError = '';
 
 function setSyncUI(state, msg) {
   const dot  = document.getElementById('syncDot');
@@ -177,6 +178,7 @@ async function syncToSheets(silent) {
 function loadFromSheetsByJsonp() {
   return new Promise((resolve) => {
     if (!gasUrl) { resolve(null); return; }
+    lastSheetLoadError = '';
 
     const callbackName = 'csmSheetLoad_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     const script = document.createElement('script');
@@ -193,6 +195,7 @@ function loadFromSheetsByJsonp() {
       cleanup();
       const payload = unwrapCsmPayload(data);
       if (!payload || payload.error) {
+        lastSheetLoadError = payload?.error || 'GASからCSMデータ形式ではない応答が返りました。';
         resolve(null);
         return;
       }
@@ -201,6 +204,7 @@ function loadFromSheetsByJsonp() {
 
     script.onerror = function() {
       cleanup();
+      lastSheetLoadError = 'JSONPスクリプトの読み込みに失敗しました。GAS URL、公開範囲、再デプロイ状況を確認してください。';
       resolve(null);
     };
 
@@ -213,7 +217,9 @@ function loadFromSheetsByJsonp() {
     document.body.appendChild(script);
 
     setTimeout(() => {
+      if (done) return;
       cleanup();
+      lastSheetLoadError = 'GASから10秒以内に応答がありませんでした。URLまたはWebアプリの公開設定を確認してください。';
       resolve(null);
     }, 10000);
   });
@@ -239,7 +245,7 @@ async function reloadFromSheets() {
   const data = await loadFromSheets();
   if (!data) {
     setSyncUI('error');
-    setGasMsg('読み込みに失敗しました。URL・デプロイ設定を確認してください。', true);
+    setGasMsg(`読み込みに失敗しました。${lastSheetLoadError || 'URL・デプロイ設定を確認してください。'}`, true);
     return;
   }
   applyRemoteData(data);
@@ -1235,8 +1241,35 @@ function renderWBS() {
 
   const stLabel = {todo:'未着手', inprogress:'進行中', done:'完了'};
   const stColor = {todo:'#378ADD', inprogress:'#1D9E75', done:'#888780'};
+  function mobileScheduleWindow(t, fallbackColor) {
+    const start = parseDateOnly(t.startDate);
+    const end = parseDateOnly(t.endDate);
+    const cw = parseFloat(COL_W);
+    if (!start && !end) {
+      return {hasDate:false, left:0, width:100, color:'#d0d0cc'};
+    }
+
+    const startBase = start || today;
+    const endBase = end || startBase;
+    const startDiff = Math.round((startBase - today) / 86400000);
+    const endDiff = Math.round((endBase - today) / 86400000);
+    const fromDiff = Math.min(startDiff, endDiff);
+    const toDiff = Math.max(startDiff, endDiff);
+    const clampedFrom = Math.max(-PAST_DAYS, Math.min(FUTURE_DAYS, fromDiff));
+    const clampedTo = Math.max(-PAST_DAYS, Math.min(FUTURE_DAYS, toDiff));
+    const sp = parseFloat(pct(clampedFrom));
+    const ep = parseFloat(pct(clampedTo));
+    const left = Math.min(97, Math.max(0, Math.min(sp, ep)));
+    const rawWidth = Math.abs(ep - sp) + cw;
+    const width = Math.max(3, Math.min(100 - left, rawWidth));
+    const overdue = end && endDiff < 0 && t.status !== 'done';
+    const soon = end && !overdue && endDiff <= 3;
+    const color = overdue ? '#E24B4A' : soon ? '#EF9F27' : fallbackColor;
+    return {hasDate:true, left, width, color};
+  }
 
   let rows = '';
+  let mobileRows = '';
   let wbsNo = 1;
 
   catalogs.categories.forEach(catInfo => {
@@ -1246,6 +1279,7 @@ function renderWBS() {
     if (!catTasks.length) return;
     const totalH = catTasks.reduce((s,t) => s + t.effort, 0);
     const avgProg = Math.round(catTasks.reduce((s,t) => s + (t.progress||0), 0) / catTasks.length);
+    let mobileTaskCards = '';
 
     rows += `<div class="wbs-tl-cat">
       <div class="wbs-tl-label" style="border-left:3px solid ${catColor};">
@@ -1259,6 +1293,7 @@ function renderWBS() {
       const owners = t.owners || (t.owner ? [t.owner] : []);
       const prog   = t.progress != null ? t.progress : 0;
       const progCol = prog >= 100 ? '#888780' : prog >= 60 ? '#1D9E75' : prog >= 30 ? '#EF9F27' : '#378ADD';
+      const taskNo = String(wbsNo++).padStart(2,'0');
 
       let chartContent = colBgs + gridLines + todayLine;
 
@@ -1309,11 +1344,13 @@ function renderWBS() {
       const q = t.urgency && t.importance ? 'Q1' : !t.urgency && t.importance ? 'Q2' : t.urgency ? 'Q3' : 'Q4';
       const qCol = q==='Q1'?'#c44':q==='Q2'?'#2563eb':q==='Q3'?'#b45309':'#888';
       const scheduleText = dateRangeText(t.startDate, t.endDate);
+      const mobileWin = mobileScheduleWindow(t, catColor);
+      const mobileOwners = owners.length ? owners.map(o => `👤${escapeHtml(o)}`).join(' ') : '担当未設定';
 
       rows += `<div class="wbs-tl-task">
         <div class="wbs-tl-label">
           <div style="display:flex;align-items:flex-start;gap:4px;">
-            <span style="color:var(--text3);font-size:9px;font-family:monospace;flex-shrink:0;margin-top:1px;">${String(wbsNo++).padStart(2,'0')}</span>
+            <span style="color:var(--text3);font-size:9px;font-family:monospace;flex-shrink:0;margin-top:1px;">${taskNo}</span>
             <span style="font-size:11px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeAttr(t.title)}">${escapeHtml(t.title)}</span>
           </div>
           <div style="display:flex;gap:4px;align-items:center;margin-top:2px;flex-wrap:wrap;">
@@ -1329,7 +1366,39 @@ function renderWBS() {
         </div>
         <div class="wbs-tl-chart">${chartContent}</div>
       </div>`;
+
+      mobileTaskCards += `<div class="wbs-mobile-task" style="border-left-color:${catColor};">
+        <div class="wbs-mobile-title-row">
+          <span class="wbs-mobile-no">${taskNo}</span>
+          <div class="wbs-mobile-title" title="${escapeAttr(t.title)}">${escapeHtml(t.title)}</div>
+          <span class="wbs-mobile-progress" style="color:${progCol};">${prog}%</span>
+        </div>
+        <div class="wbs-mobile-meta">
+          <span style="color:${stColor[t.status]};border-color:${stColor[t.status]};">${stLabel[t.status]}</span>
+          <span style="color:${qCol};border-color:${qCol};">${q}</span>
+          <span>${formatHours(t.effort)}h</span>
+          <span>${mobileOwners}</span>
+        </div>
+        <div class="wbs-mobile-date" style="${endDateColor(t.endDate)}">${scheduleText || '日程未設定'}</div>
+        <div class="wbs-mobile-rail${mobileWin.hasDate ? '' : ' is-empty'}">
+          <div class="wbs-mobile-today" style="left:${todayPct.toFixed(3)}%;"></div>
+          <div class="wbs-mobile-range" style="left:${mobileWin.left.toFixed(3)}%;width:${mobileWin.width.toFixed(3)}%;background:${mobileWin.color}22;">
+            <div class="wbs-mobile-range-fill" style="width:${prog}%;background:${progCol};"></div>
+          </div>
+        </div>
+        <div class="wbs-mobile-scale">
+          <span>7日前</span><span>今日</span><span>28日後</span>
+        </div>
+      </div>`;
     });
+
+    mobileRows += `<section class="wbs-mobile-section" style="--cat-color:${catColor};">
+      <div class="wbs-mobile-cat">
+        <div class="wbs-mobile-cat-name">${escapeHtml(catInfo.label)}</div>
+        <div class="wbs-mobile-cat-meta">${catTasks.length}件 · ${formatHours(totalH)}h · 平均${avgProg}%</div>
+      </div>
+      ${mobileTaskCards}
+    </section>`;
   });
 
   const totalAll = tasks.reduce((s,t) => s + t.effort, 0);
@@ -1340,7 +1409,7 @@ function renderWBS() {
       <div style="font-size:13px;font-weight:500;">WBS タイムライン <span style="font-size:11px;font-weight:400;color:var(--text2);">（7日前〜今日〜28日後）</span></div>
       <div style="font-size:11px;color:var(--text2);">総工数: <strong style="color:var(--text);">${formatHours(totalAll)}h</strong> · ${tasks.length}件 · 全体進捗: <strong style="color:var(--text);">${avgProgAll}%</strong></div>
     </div>
-    <div class="wbs-timeline">
+    <div class="wbs-timeline wbs-timeline-desktop">
       <div class="wbs-tl-header">
         <div class="wbs-tl-label" style="font-size:10px;color:var(--text2);font-weight:500;justify-content:center;align-items:center;text-align:center;">
           <div style="font-size:9px;color:var(--text3);">月</div>
@@ -1353,6 +1422,9 @@ function renderWBS() {
         </div>
       </div>
       ${rows}
+    </div>
+    <div class="wbs-mobile">
+      ${mobileRows || '<div class="wbs-mobile-empty">タスクがありません。</div>'}
     </div>
     <div style="margin-top:10px;display:flex;gap:14px;font-size:10px;color:var(--text2);flex-wrap:wrap;">
       <span>● 終了日マーカー：<span style="color:#E24B4A;">超過</span> / <span style="color:#EF9F27;">3日以内</span> / <span style="color:#1D9E75;">通常</span></span>
