@@ -9,14 +9,14 @@
 <title>Capacity & Stress Manager</title>
 <link rel="manifest" href="manifest.json">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<link rel="stylesheet" href="assets/css/00-foundation.css?v=20260516-5">
-<link rel="stylesheet" href="assets/css/01-stress.css?v=20260516-5">
-<link rel="stylesheet" href="assets/css/02-tasks-settings.css?v=20260516-5">
-<link rel="stylesheet" href="assets/css/03-wbs.css?v=20260516-5">
-<link rel="stylesheet" href="assets/css/04-sync.css?v=20260516-5">
-<link rel="stylesheet" href="assets/css/05-responsive.css?v=20260516-5">
-<link rel="stylesheet" href="assets/css/06-print-utilities.css?v=20260516-5">
-<link rel="stylesheet" href="assets/css/07-ios-first.css?v=20260516-5">
+<link rel="stylesheet" href="assets/css/00-foundation.css?v=20260516-6">
+<link rel="stylesheet" href="assets/css/01-stress.css?v=20260516-6">
+<link rel="stylesheet" href="assets/css/02-tasks-settings.css?v=20260516-6">
+<link rel="stylesheet" href="assets/css/03-wbs.css?v=20260516-6">
+<link rel="stylesheet" href="assets/css/04-sync.css?v=20260516-6">
+<link rel="stylesheet" href="assets/css/05-responsive.css?v=20260516-6">
+<link rel="stylesheet" href="assets/css/06-print-utilities.css?v=20260516-6">
+<link rel="stylesheet" href="assets/css/07-ios-first.css?v=20260516-6">
 </head>
 <body>
 <div class="app" id="app">
@@ -39,12 +39,12 @@
 
 <!-- TABS -->
 <div class="tabs no-print">
-  <button class="tab active" data-short="ホーム" onclick="sw('dash')">ダッシュボード</button>
-  <button class="tab" data-short="タスク" onclick="sw('tasks')">タスク管理</button>
-  <button class="tab" data-short="WBS" onclick="sw('wbs')">WBS</button>
-  <button class="tab" data-short="ケア" onclick="sw('stress')">ストレスケア</button>
-  <button class="tab" data-short="設定" onclick="sw('settings')">設定</button>
-  <button class="tab" data-short="出力" onclick="sw('export')">全タブ出力</button>
+  <button class="tab active" data-short="ホーム" data-icon="●" onclick="sw('dash')">ダッシュボード</button>
+  <button class="tab" data-short="タスク" data-icon="✓" onclick="sw('tasks')">タスク管理</button>
+  <button class="tab" data-short="WBS" data-icon="▣" onclick="sw('wbs')">WBS</button>
+  <button class="tab" data-short="ケア" data-icon="◌" onclick="sw('stress')">ストレスケア</button>
+  <button class="tab" data-short="その他" data-icon="…" onclick="sw('settings')">設定</button>
+  <button class="tab export-tab" data-short="出力" data-icon="⇧" onclick="sw('export')">全タブ出力</button>
 </div>
 
 <!-- ==================== DASHBOARD ==================== -->
@@ -241,6 +241,13 @@
 
 <!-- ==================== SETTINGS ==================== -->
 <div class="panel" id="p-settings">
+  <div class="card no-print settings-actions-card">
+    <div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:3px;">データ連携・出力</div>
+      <div style="font-size:12px;color:var(--text2);">Google Sheets連携、PDF出力、JSON保存はここから開けます。</div>
+    </div>
+    <button class="primary" onclick="sw('export')">出力設定を開く</button>
+  </div>
   <div class="card no-print">
     <div style="font-size:13px;font-weight:500;margin-bottom:9px;">タスク設定</div>
     <div class="settings-grid">
@@ -340,15 +347,15 @@
 
 </div><!-- /app -->
 
-<script src="assets/js/00-sync.js?v=20260516-5"></script>
-<script src="assets/js/01-data-catalogs.js?v=20260516-5"></script>
-<script src="assets/js/02-state-storage.js?v=20260516-5"></script>
-<script src="assets/js/03-dashboard.js?v=20260516-5"></script>
-<script src="assets/js/04-tasks.js?v=20260516-5"></script>
-<script src="assets/js/05-drag-drop.js?v=20260516-5"></script>
-<script src="assets/js/06-wbs.js?v=20260516-5"></script>
-<script src="assets/js/07-stress.js?v=20260516-5"></script>
-<script src="assets/js/08-export.js?v=20260516-5"></script>
-<script src="assets/js/09-bootstrap.js?v=20260516-5"></script>
+<script src="assets/js/00-sync.js?v=20260516-6"></script>
+<script src="assets/js/01-data-catalogs.js?v=20260516-6"></script>
+<script src="assets/js/02-state-storage.js?v=20260516-6"></script>
+<script src="assets/js/03-dashboard.js?v=20260516-6"></script>
+<script src="assets/js/04-tasks.js?v=20260516-6"></script>
+<script src="assets/js/05-drag-drop.js?v=20260516-6"></script>
+<script src="assets/js/06-wbs.js?v=20260516-6"></script>
+<script src="assets/js/07-stress.js?v=20260516-6"></script>
+<script src="assets/js/08-export.js?v=20260516-6"></script>
+<script src="assets/js/09-bootstrap.js?v=20260516-6"></script>
 </body>
 </html>

@@ -37,7 +37,8 @@ function sw(tab) {
   document.getElementById('p-'+tab)?.classList.add('active');
   const tabs = document.querySelectorAll('.tab');
   const idx = {'dash':0,'tasks':1,'wbs':2,'stress':3,'settings':4,'export':5};
-  if (tabs[idx[tab]]) tabs[idx[tab]].classList.add('active');
+  const activeIdx = tab === 'export' && window.matchMedia('(max-width: 720px)').matches ? idx.settings : idx[tab];
+  if (tabs[activeIdx]) tabs[activeIdx].classList.add('active');
   if (tab==='dash') { updateMetrics(); renderMatrix(); renderChart(); renderDashStress(); }
   if (tab==='tasks') renderTaskList();
   if (tab==='wbs') renderWBS();

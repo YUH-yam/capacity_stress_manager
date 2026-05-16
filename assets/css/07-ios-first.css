@@ -45,7 +45,7 @@
 
   .header-left .date {
     color: var(--ios-label);
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 800;
     line-height: 1.15;
   }
@@ -114,8 +114,8 @@
   }
 
   .tab {
-    min-height: 34px;
-    padding: 7px 6px;
+    min-height: 38px;
+    padding: 8px 7px;
     background: transparent;
     border: 0;
     border-radius: var(--radius-sm);
@@ -156,6 +156,17 @@
     background: var(--ios-card);
   }
 
+  .card {
+    padding: 19px;
+  }
+
+  .stat,
+  .task-item,
+  .settings-section,
+  .log-item {
+    padding: 15px;
+  }
+
   button.primary,
   .fbtn.active,
   .mck-label.checked {
@@ -170,6 +181,26 @@
     box-shadow: 0 0 0 3px rgba(0,122,255,.12);
   }
 
+  button,
+  input[type=text],
+  input[type=number],
+  input[type=date],
+  select,
+  textarea,
+  .mck-label,
+  .fbtn {
+    min-height: 44px;
+  }
+
+  input[type=text],
+  input[type=number],
+  input[type=date],
+  select,
+  textarea {
+    background: #fff;
+    border-color: var(--ios-separator);
+  }
+
   .stat .value {
     color: var(--ios-label);
     font-weight: 800;
@@ -179,6 +210,13 @@
   .task-prog-bar,
   .prog-bar {
     background: rgba(60,60,67,.14);
+  }
+
+  .settings-actions-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
   }
 }
 
@@ -251,7 +289,7 @@
     bottom: 0;
     z-index: 60;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0;
     margin: 0;
     padding: 7px max(8px, env(safe-area-inset-left)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
@@ -266,8 +304,8 @@
   .tab {
     position: relative;
     min-width: 0;
-    min-height: 46px;
-    padding: 14px 2px 3px;
+    min-height: 54px;
+    padding: 26px 2px 4px;
     border-radius: 0;
     background: transparent;
     color: #8b95a1;
@@ -285,16 +323,21 @@
   }
 
   .tab::before {
-    content: '';
+    content: attr(data-icon);
     position: absolute;
-    top: 7px;
+    top: 6px;
     left: 50%;
-    width: 5px;
-    height: 5px;
+    width: 28px;
+    height: 20px;
     transform: translateX(-50%);
-    border-radius: 999px;
-    background: currentColor;
-    opacity: .32;
+    border-radius: 9px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1;
+    opacity: .76;
   }
 
   .tab.active {
@@ -304,10 +347,14 @@
   }
 
   .tab.active::before {
-    width: 22px;
-    height: 3px;
+    height: 22px;
     top: 5px;
+    background: rgba(0,122,255,.12);
     opacity: 1;
+  }
+
+  .export-tab {
+    display: none;
   }
 
   .card,
@@ -326,6 +373,10 @@
     padding: 14px;
   }
 
+  .card {
+    margin-bottom: 12px;
+  }
+
   .stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
@@ -341,6 +392,14 @@
 
   .task-actions {
     min-width: 0;
+  }
+
+  .settings-actions-card {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-actions-card button {
+    width: 100%;
   }
 }
 
