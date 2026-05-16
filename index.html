@@ -9,14 +9,14 @@
 <title>Capacity & Stress Manager</title>
 <link rel="manifest" href="manifest.json">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<link rel="stylesheet" href="assets/css/00-foundation.css?v=20260516-7">
-<link rel="stylesheet" href="assets/css/01-stress.css?v=20260516-7">
-<link rel="stylesheet" href="assets/css/02-tasks-settings.css?v=20260516-7">
-<link rel="stylesheet" href="assets/css/03-wbs.css?v=20260516-7">
-<link rel="stylesheet" href="assets/css/04-sync.css?v=20260516-7">
-<link rel="stylesheet" href="assets/css/05-responsive.css?v=20260516-7">
-<link rel="stylesheet" href="assets/css/06-print-utilities.css?v=20260516-7">
-<link rel="stylesheet" href="assets/css/07-ios-first.css?v=20260516-7">
+<link rel="stylesheet" href="assets/css/00-foundation.css?v=20260516-8">
+<link rel="stylesheet" href="assets/css/01-stress.css?v=20260516-8">
+<link rel="stylesheet" href="assets/css/02-tasks-settings.css?v=20260516-8">
+<link rel="stylesheet" href="assets/css/03-wbs.css?v=20260516-8">
+<link rel="stylesheet" href="assets/css/04-sync.css?v=20260516-8">
+<link rel="stylesheet" href="assets/css/05-responsive.css?v=20260516-8">
+<link rel="stylesheet" href="assets/css/06-print-utilities.css?v=20260516-8">
+<link rel="stylesheet" href="assets/css/07-ios-first.css?v=20260516-8">
 </head>
 <body>
 <div class="app" id="app">
@@ -79,25 +79,25 @@
       <div style="font-size:13px;font-weight:500;margin-bottom:9px;">優先度マトリクス</div>
       <div style="text-align:center;font-size:10px;color:var(--text2);margin-bottom:3px;">↑ 重要度：高</div>
       <div class="mx-grid">
-        <div class="mx-cell" style="background:#eff6ff;">
-          <div class="title" style="color:#2563eb;">計画して実行</div>
-          <div class="sub">重要·非緊急</div>
-          <div id="q2t"></div>
-        </div>
-        <div class="mx-cell" style="background:#fff0f0;">
+        <div class="mx-cell mx-q1" style="background:#fff0f0;">
           <div class="title" style="color:#c44;">今すぐ対応</div>
           <div class="sub">重要·緊急</div>
           <div id="q1t"></div>
         </div>
-        <div class="mx-cell" style="background:#f7f7f5;opacity:.75;">
-          <div class="title" style="color:var(--text2);">通常どおり</div>
-          <div class="sub">非重要·非緊急</div>
-          <div id="q4t"></div>
-        </div>
-        <div class="mx-cell" style="background:#fffbeb;">
+        <div class="mx-cell mx-q3" style="background:#fffbeb;">
           <div class="title" style="color:#b45309;">協力依頼</div>
           <div class="sub">非重要·緊急</div>
           <div id="q3t"></div>
+        </div>
+        <div class="mx-cell mx-q2" style="background:#eff6ff;">
+          <div class="title" style="color:#2563eb;">計画して実行</div>
+          <div class="sub">重要·非緊急</div>
+          <div id="q2t"></div>
+        </div>
+        <div class="mx-cell mx-q4" style="background:#f7f7f5;opacity:.75;">
+          <div class="title" style="color:var(--text2);">通常どおり</div>
+          <div class="sub">非重要·非緊急</div>
+          <div id="q4t"></div>
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--text2);">
@@ -233,9 +233,11 @@
     </div>
   </div>
 
-  <div class="card">
-    <div style="font-size:13px;font-weight:500;margin-bottom:9px;">記録ログ</div>
-    <div id="slogEl"></div>
+  <div class="card stress-log-card">
+    <details>
+      <summary>記録ログ</summary>
+      <div id="slogEl"></div>
+    </details>
   </div>
 </div>
 
@@ -347,15 +349,15 @@
 
 </div><!-- /app -->
 
-<script src="assets/js/00-sync.js?v=20260516-7"></script>
-<script src="assets/js/01-data-catalogs.js?v=20260516-7"></script>
-<script src="assets/js/02-state-storage.js?v=20260516-7"></script>
-<script src="assets/js/03-dashboard.js?v=20260516-7"></script>
-<script src="assets/js/04-tasks.js?v=20260516-7"></script>
-<script src="assets/js/05-drag-drop.js?v=20260516-7"></script>
-<script src="assets/js/06-wbs.js?v=20260516-7"></script>
-<script src="assets/js/07-stress.js?v=20260516-7"></script>
-<script src="assets/js/08-export.js?v=20260516-7"></script>
-<script src="assets/js/09-bootstrap.js?v=20260516-7"></script>
+<script src="assets/js/00-sync.js?v=20260516-8"></script>
+<script src="assets/js/01-data-catalogs.js?v=20260516-8"></script>
+<script src="assets/js/02-state-storage.js?v=20260516-8"></script>
+<script src="assets/js/03-dashboard.js?v=20260516-8"></script>
+<script src="assets/js/04-tasks.js?v=20260516-8"></script>
+<script src="assets/js/05-drag-drop.js?v=20260516-8"></script>
+<script src="assets/js/06-wbs.js?v=20260516-8"></script>
+<script src="assets/js/07-stress.js?v=20260516-8"></script>
+<script src="assets/js/08-export.js?v=20260516-8"></script>
+<script src="assets/js/09-bootstrap.js?v=20260516-8"></script>
 </body>
 </html>
