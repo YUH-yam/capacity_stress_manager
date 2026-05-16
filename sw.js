@@ -1,4 +1,4 @@
-const CACHE_NAME = 'capacity-stress-manager-v6';
+const CACHE_NAME = 'capacity-stress-manager-v7';
 const APP_SHELL = [
   './',
   './index.html',

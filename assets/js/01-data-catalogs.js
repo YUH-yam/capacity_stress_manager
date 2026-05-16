@@ -62,6 +62,16 @@ function formatHours(value) {
   return roundToTenth(value).toFixed(1);
 }
 
+function getTaskProgress(task) {
+  return Math.max(0, Math.min(100, toFiniteNumber(task?.progress, 0)));
+}
+
+function getTaskAllocatedEffort(task) {
+  if (!task || task.status === 'done') return 0;
+  const remainingRatio = Math.max(0, 100 - getTaskProgress(task)) / 100;
+  return roundToTenth(toFiniteNumber(task.effort, 0) * remainingRatio);
+}
+
 function normalizeDateValue(value) {
   const s = String(value || '').trim();
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';

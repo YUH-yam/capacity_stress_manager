@@ -71,6 +71,7 @@ function renderTaskList() {
     const categoryLabel = getCategoryLabel(t.category);
     const startDate = normalizeDateValue(t.startDate);
     const endDate = normalizeDateValue(t.endDate);
+    const allocatedEffort = getTaskAllocatedEffort(t);
     return `<div class="task-item" draggable="true" data-id="${t.id}"
       ondragstart="dStart(event,${t.id})" ondragover="dOver(event)" ondrop="dDrop(event,${t.id})" ondragend="dEnd(event)">
       <div class="task-drag" title="ドラッグして並び替え">⠿</div>
@@ -82,6 +83,7 @@ function renderTaskList() {
           ${t.urgency ? '<span class="badge" style="background:#fff0f0;color:#c44;">緊急</span>' : ''}
           ${t.importance ? '<span class="badge" style="background:#eff6ff;color:#2563eb;">重要</span>' : ''}
           <span style="font-size:11px;color:var(--text2);">${formatHours(t.effort)}h</span>
+          <span class="badge" style="background:#eef7ff;color:#007aff;border:1px solid #cfe7ff;">割当 ${formatHours(allocatedEffort)}h</span>
           ${owners.map(o => `<span class="badge" style="background:var(--bg2);color:var(--text2);border:1px solid var(--border);">👤${escapeHtml(o)}</span>`).join('')}
           ${tags.map(tg => `<span class="badge" style="background:#f0f0ff;color:#5050bb;">🏷${escapeHtml(tg)}</span>`).join('')}
         </div>

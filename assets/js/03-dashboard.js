@@ -11,8 +11,8 @@ function sv(id, v) { const e = document.getElementById(id); if (e) e.textContent
 function updateMetrics() {
   const {d, w} = getCap();
   const myA = tasks.filter(t => (t.owners||[t.owner]).includes('自分') && t.status !== 'done');
-  const te = myA.filter(t => t.urgency).reduce((s,t) => s + t.effort, 0);
-  const we = myA.reduce((s,t) => s + t.effort, 0);
+  const te = myA.filter(t => t.urgency).reduce((s,t) => s + getTaskAllocatedEffort(t), 0);
+  const we = myA.reduce((s,t) => s + getTaskAllocatedEffort(t), 0);
   const tp = Math.min(te/d, 1), wp = Math.min(we/w, 1);
   sv('todayH', te.toFixed(1)+'h');
   sv('weekH', we.toFixed(1)+'h');
@@ -39,7 +39,7 @@ function renderMatrix() {
     const el = document.getElementById(q+'t'); if (!el) return;
     const qt = act.filter(t => t.urgency === u && t.importance === i);
     el.innerHTML = qt.map(t =>
-      `<div class="mx-chip"><span>${escapeHtml(t.title)}</span><span style="background:${getCategoryColor(t.category)}22;color:${getCategoryColor(t.category)};padding:1px 5px;border-radius:3px;font-size:9px;flex-shrink:0;">${formatHours(t.effort)}h</span></div>`
+      `<div class="mx-chip"><span>${escapeHtml(t.title)}</span><span style="background:${getCategoryColor(t.category)}22;color:${getCategoryColor(t.category)};padding:1px 5px;border-radius:3px;font-size:9px;flex-shrink:0;">${formatHours(getTaskAllocatedEffort(t))}h</span></div>`
     ).join('') || '<div style="font-size:10px;color:var(--text3);font-style:italic;">なし</div>';
   });
 }
@@ -70,7 +70,7 @@ function renderChart() {
   const filt = catalogs.categories.map(cat => ({
     c: cat.id,
     label: cat.label,
-    v: tasks.filter(t => t.category === cat.id && t.status !== 'done').reduce((s,t) => s+t.effort, 0),
+    v: tasks.filter(t => t.category === cat.id && t.status !== 'done').reduce((s,t) => s + getTaskAllocatedEffort(t), 0),
     color: cat.color
   })).filter(x => x.v > 0);
   const canvas = document.getElementById('catChart'); if (!canvas) return;

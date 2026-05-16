@@ -137,7 +137,7 @@ function renderWBS() {
     const catColor = catInfo.color;
     const catTasks = tasks.filter(t => t.category === cat);
     if (!catTasks.length) return;
-    const totalH = catTasks.reduce((s,t) => s + t.effort, 0);
+    const totalH = catTasks.reduce((s,t) => s + getTaskAllocatedEffort(t), 0);
     const avgProg = Math.round(catTasks.reduce((s,t) => s + (t.progress||0), 0) / catTasks.length);
     let mobileTaskCards = '';
 
@@ -194,7 +194,7 @@ function renderWBS() {
           <div style="display:flex;gap:4px;align-items:center;margin-top:2px;flex-wrap:wrap;">
             <span style="font-size:9px;color:${stColor[t.status]};border:1px solid ${stColor[t.status]};padding:0 3px;border-radius:2px;line-height:1.6;">${stLabel[t.status]}</span>
             <span style="font-size:9px;color:${qCol};font-weight:600;">${q}</span>
-            <span style="font-size:9px;color:var(--text2);">${formatHours(t.effort)}h</span>
+            <span style="font-size:9px;color:var(--text2);">割当 ${formatHours(getTaskAllocatedEffort(t))}h</span>
           </div>
           ${scheduleText ? `<div style="font-size:8px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${scheduleText}</div>` : ''}
           <div style="margin-top:3px;">
@@ -214,7 +214,7 @@ function renderWBS() {
         <div class="wbs-mobile-meta">
           <span style="color:${stColor[t.status]};border-color:${stColor[t.status]};">${stLabel[t.status]}</span>
           <span style="color:${qCol};border-color:${qCol};">${q}</span>
-          <span>${formatHours(t.effort)}h</span>
+          <span>割当 ${formatHours(getTaskAllocatedEffort(t))}h</span>
           <span>${mobileOwners}</span>
         </div>
         <div class="wbs-mobile-date" style="${endDateColor(t.endDate)}">${scheduleText || '日程未設定'}</div>
@@ -239,13 +239,13 @@ function renderWBS() {
     </section>`;
   });
 
-  const totalAll = tasks.reduce((s,t) => s + t.effort, 0);
+  const totalAll = tasks.reduce((s,t) => s + getTaskAllocatedEffort(t), 0);
   const avgProgAll = tasks.length ? Math.round(tasks.reduce((s,t) => s + (t.progress||0), 0) / tasks.length) : 0;
 
   el.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
       <div style="font-size:13px;font-weight:500;">WBS タイムライン <span style="font-size:11px;font-weight:400;color:var(--text2);">（7日前〜今日〜28日後）</span></div>
-      <div style="font-size:11px;color:var(--text2);">総工数: <strong style="color:var(--text);">${formatHours(totalAll)}h</strong> · ${tasks.length}件 · 全体進捗: <strong style="color:var(--text);">${avgProgAll}%</strong></div>
+      <div style="font-size:11px;color:var(--text2);">割当工数: <strong style="color:var(--text);">${formatHours(totalAll)}h</strong> · ${tasks.length}件 · 全体進捗: <strong style="color:var(--text);">${avgProgAll}%</strong></div>
     </div>
     <div class="wbs-timeline wbs-timeline-desktop">
       <div class="wbs-tl-header">
