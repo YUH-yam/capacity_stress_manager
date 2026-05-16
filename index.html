@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#f7f8fb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CSM">
+<title>Capacity & Stress Manager</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="assets/css/00-foundation.css?v=20260516-5">
+<link rel="stylesheet" href="assets/css/01-stress.css?v=20260516-5">
+<link rel="stylesheet" href="assets/css/02-tasks-settings.css?v=20260516-5">
+<link rel="stylesheet" href="assets/css/03-wbs.css?v=20260516-5">
+<link rel="stylesheet" href="assets/css/04-sync.css?v=20260516-5">
+<link rel="stylesheet" href="assets/css/05-responsive.css?v=20260516-5">
+<link rel="stylesheet" href="assets/css/06-print-utilities.css?v=20260516-5">
+<link rel="stylesheet" href="assets/css/07-ios-first.css?v=20260516-5">
+</head>
+<body>
+<div class="app" id="app">
+
+<!-- HEADER -->
+<div class="header no-print">
+  <div class="header-left">
+    <div class="eyebrow">CAPACITY &amp; STRESS MANAGER</div>
+    <div class="date" id="dateDisp">—</div>
+  </div>
+  <div class="header-right">
+    <div class="label">週次利用率</div>
+    <div class="util" id="weekUtil">--%</div>
+    <div class="sync-status no-print">
+      <div class="sync-dot idle" id="syncDot"></div>
+      <span id="syncText">Sheets未設定</span>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs no-print">
+  <button class="tab active" data-short="ホーム" onclick="sw('dash')">ダッシュボード</button>
+  <button class="tab" data-short="タスク" onclick="sw('tasks')">タスク管理</button>
+  <button class="tab" data-short="WBS" onclick="sw('wbs')">WBS</button>
+  <button class="tab" data-short="ケア" onclick="sw('stress')">ストレスケア</button>
+  <button class="tab" data-short="設定" onclick="sw('settings')">設定</button>
+  <button class="tab" data-short="出力" onclick="sw('export')">全タブ出力</button>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div class="panel active" id="p-dash">
+  <div class="stat-grid">
+    <div class="stat">
+      <div class="label">今日の割当工数</div>
+      <div class="value" id="todayH">--h</div>
+      <div class="sub" id="todayCapL">/ 8h 上限</div>
+      <div class="bar-wrap"><div class="bar" id="todayBar"></div></div>
+    </div>
+    <div class="stat">
+      <div class="label">週次割当工数</div>
+      <div class="value" id="weekH">--h</div>
+      <div class="sub" id="weekCapL">/ 40h 上限</div>
+      <div class="bar-wrap"><div class="bar" id="weekBar"></div></div>
+    </div>
+    <div class="stat" id="q1Stat" style="background:#fff0f0;border-color:#fcc;">
+      <div class="label" style="color:#c44;">今すぐ対応</div>
+      <div class="value" style="color:#c44;" id="q1Cnt">--</div>
+      <div class="sub" style="color:#c44;">Q1タスク数</div>
+    </div>
+    <div class="stat" id="stressStat">
+      <div class="label" id="stressStatLbl">ストレス要ケア</div>
+      <div class="value" id="stressStatNum">--</div>
+      <div class="sub" style="opacity:.7">ポイント数</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div style="font-size:13px;font-weight:500;margin-bottom:9px;">優先度マトリクス</div>
+      <div style="text-align:center;font-size:10px;color:var(--text2);margin-bottom:3px;">↑ 重要度：高</div>
+      <div class="mx-grid">
+        <div class="mx-cell" style="background:#eff6ff;">
+          <div class="title" style="color:#2563eb;">計画して実行</div>
+          <div class="sub">重要·非緊急</div>
+          <div id="q2t"></div>
+        </div>
+        <div class="mx-cell" style="background:#fff0f0;">
+          <div class="title" style="color:#c44;">今すぐ対応</div>
+          <div class="sub">重要·緊急</div>
+          <div id="q1t"></div>
+        </div>
+        <div class="mx-cell" style="background:#f7f7f5;opacity:.75;">
+          <div class="title" style="color:var(--text2);">通常どおり</div>
+          <div class="sub">非重要·非緊急</div>
+          <div id="q4t"></div>
+        </div>
+        <div class="mx-cell" style="background:#fffbeb;">
+          <div class="title" style="color:#b45309;">協力依頼</div>
+          <div class="sub">非重要·緊急</div>
+          <div id="q3t"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--text2);">
+        <span>← 緊急度：低</span><span>緊急度：高 →</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:13px;font-weight:500;margin-bottom:9px;">ストレスサマリー</div>
+      <div id="dashStressSummary"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:500;margin-bottom:9px;">カテゴリ別工数</div>
+    <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+    <div class="legend" id="chartLegend"></div>
+  </div>
+</div>
+
+<!-- ==================== TASKS ==================== -->
+<div class="panel" id="p-tasks">
+  <div class="cap-row no-print">
+    <span style="font-size:12px;font-weight:500;color:var(--text2);">キャパシティ設定</span>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;">日次: <input type="number" id="dailyCap" value="8.0" min="0.1" max="16" step="0.1" style="width:58px;" oninput="saveSettings();ra()"> h</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;">週次: <input type="number" id="weeklyCap" value="40.0" min="0.1" max="80" step="0.1" style="width:64px;" oninput="saveSettings();ra()"> h</label>
+  </div>
+
+  <div class="card add-form-wrap no-print">
+    <div style="font-size:13px;font-weight:500;margin-bottom:9px;">新しいタスクを追加</div>
+    <div class="add-form">
+      <input type="text" id="tTitle" placeholder="タスク名を入力..." style="width:100%;">
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">カテゴリ</div>
+        <select id="tCat" style="width:100%;"></select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">担当（複数選択可）</div>
+        <div class="multi-check-group" id="tOwners"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">項目（複数選択可）</div>
+        <div class="multi-check-group" id="tTags"></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="tUrgent"> 緊急</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="tImportant"> 重要</label>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;">工数: <input type="number" id="tEffort" min="0.1" max="40" step="0.1" value="2.0" style="width:58px;"> h</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;">開始日: <input type="date" id="tStartDate" style="width:140px;"></div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;">終了日: <input type="date" id="tEndDate" style="width:140px;"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+        <span style="flex-shrink:0;">進捗率:</span>
+        <input type="range" id="tProgress" min="0" max="100" step="5" value="0" style="flex:1;accent-color:var(--green);">
+        <span id="tProgressVal" style="font-size:12px;color:var(--text2);width:32px;">0%</span>
+      </div>
+      <button class="primary" onclick="addTask()">タスクを追加</button>
+    </div>
+  </div>
+
+  <div class="filter-row no-print">
+    <button class="fbtn active" id="f-all" onclick="sf('all')">すべて</button>
+    <button class="fbtn" id="f-self" onclick="sf('self')">自分のタスク</button>
+    <button class="fbtn" id="f-del" onclick="sf('del')">委任タスク</button>
+    <button class="fbtn" id="f-done" onclick="sf('done')">完了済み</button>
+  </div>
+
+  <div id="taskList"></div>
+</div>
+
+<!-- ==================== WBS ==================== -->
+<div class="panel" id="p-wbs">
+  <div class="card no-print" style="margin-bottom:1rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px;">WBS タイムライン</div>
+        <div style="font-size:12px;color:var(--text2);">7日前〜今日〜28日後のスケジュールを表示</div>
+      </div>
+      <button class="primary" onclick="printWBS()">📄 WBSをPDF出力（A4）</button>
+    </div>
+  </div>
+  <div class="card" id="wbsContent"></div>
+</div>
+
+<!-- ==================== STRESS ==================== -->
+<div class="panel" id="p-stress">
+  <div class="stat-grid">
+    <div class="stat">
+      <div class="label">全体ウェルネス</div>
+      <div class="value" id="stressAvg">--</div>
+      <div class="sub">/ 5.0（高いほど良好）</div>
+    </div>
+    <div class="stat" id="alertCard">
+      <div class="label" id="alertLbl">要ケアポイント</div>
+      <div class="value" id="alertCnt">--</div>
+      <div class="sub">スコア2以下</div>
+    </div>
+    <div class="stat">
+      <div class="label">最も負荷が高い場所</div>
+      <div class="value" style="font-size:15px;line-height:1.4;" id="topLoc">--</div>
+    </div>
+    <div class="stat">
+      <div class="label">最も負荷が高い部位</div>
+      <div class="value" style="font-size:15px;line-height:1.4;" id="topArea">--</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:11px;flex-wrap:wrap;gap:7px;">
+      <div>
+        <div style="font-size:13px;font-weight:500;">ストレスマトリクス</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;">セルをクリックして記録・更新</div>
+      </div>
+      <div class="s-legend">
+        <span class="s-legend-item"><span class="s-dot" style="background:#1D9E75;"></span>5 非常に良い / 4 良い</span>
+        <span class="s-legend-item"><span class="s-dot" style="background:#EF9F27;"></span>3 普通</span>
+        <span class="s-legend-item"><span class="s-dot" style="background:#E24B4A;"></span>2 悪い / 1 非常に悪い</span>
+      </div>
+    </div>
+    <div class="smx-wrap">
+      <table class="smx-table" id="smxTable"></table>
+    </div>
+  </div>
+
+  <div class="edit-panel no-print" id="editPanel" style="display:none;">
+    <div style="font-size:13px;font-weight:500;margin-bottom:3px;" id="editTitle">選択中</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:11px;">現在の状態を選択（5=非常に良い 〜 1=非常に悪い）</div>
+    <div class="score-btns" id="scoreBtns"></div>
+    <input type="text" id="stressNote" placeholder="メモ（任意）" style="width:100%;margin-bottom:9px;">
+    <div style="display:flex;gap:7px;">
+      <button class="primary" onclick="saveStress()" style="flex:1;">記録する</button>
+      <button onclick="closeEdit()">閉じる</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:500;margin-bottom:9px;">記録ログ</div>
+    <div id="slogEl"></div>
+  </div>
+</div>
+
+<!-- ==================== SETTINGS ==================== -->
+<div class="panel" id="p-settings">
+  <div class="card no-print">
+    <div style="font-size:13px;font-weight:500;margin-bottom:9px;">タスク設定</div>
+    <div class="settings-grid">
+      <section class="settings-section">
+        <div class="settings-head">
+          <div>
+            <div class="settings-title">カテゴリ</div>
+            <div class="settings-sub">タスク分類と表示色</div>
+          </div>
+        </div>
+        <div class="settings-list" id="categorySettingsList"></div>
+        <div class="settings-add-row">
+          <input type="text" id="newCategoryLabel" placeholder="カテゴリ名">
+          <input type="color" id="newCategoryColor" value="#378ADD" aria-label="カテゴリ色">
+          <button onclick="addCategorySetting()">追加</button>
+        </div>
+      </section>
+      <section class="settings-section">
+        <div class="settings-head">
+          <div>
+            <div class="settings-title">担当</div>
+            <div class="settings-sub">タスク担当の選択肢</div>
+          </div>
+        </div>
+        <div class="settings-list" id="ownerSettingsList"></div>
+        <div class="settings-add-row">
+          <input type="text" id="newOwnerValue" placeholder="担当名">
+          <button onclick="addListSetting('owners')">追加</button>
+        </div>
+      </section>
+      <section class="settings-section">
+        <div class="settings-head">
+          <div>
+            <div class="settings-title">項目</div>
+            <div class="settings-sub">タグとして付ける作業項目</div>
+          </div>
+        </div>
+        <div class="settings-list" id="tagSettingsList"></div>
+        <div class="settings-add-row">
+          <input type="text" id="newTagValue" placeholder="項目名">
+          <button onclick="addListSetting('tags')">追加</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== EXPORT ==================== -->
+<div class="panel" id="p-export">
+
+  <!-- GAS連携設定 -->
+  <div class="card no-print" style="margin-bottom:1rem;">
+    <div style="font-size:13px;font-weight:500;margin-bottom:5px;">🔗 Google スプレッドシート連携</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px;">
+      GAS Web App の URL を設定するとデータを自動的にスプレッドシートへ保存・読み込みします。<br>
+      設定方法は <code style="font-size:11px;background:var(--bg2);padding:1px 5px;border-radius:3px;">gas/Code.gs</code> の手順を参照してください。
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/…/exec"
+        style="flex:1;min-width:260px;font-size:12px;" oninput="onGasUrlInput()">
+      <button class="primary" onclick="saveGasUrl()">URLを保存</button>
+      <button onclick="clearGasUrl()" style="color:var(--red);border-color:#fcc;">クリア</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="reloadFromSheets()" id="reloadBtn" style="font-size:12px;">
+        🔄 Sheets から再読み込み
+      </button>
+      <button onclick="forceSyncToSheets()" id="forceSyncBtn" style="font-size:12px;">
+        ☁️ 今すぐ Sheets へ保存
+      </button>
+    </div>
+    <div id="gasStatusMsg" style="font-size:11px;color:var(--text2);margin-top:7px;"></div>
+  </div>
+
+  <div class="card no-print">
+    <div style="font-size:13px;font-weight:500;margin-bottom:5px;">全タブ一括PDF出力</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:13px;">ダッシュボード・タスク管理・WBS・ストレスケアの全データをA4レイアウトで出力します。</div>
+    <div class="export-bar">
+      <button class="primary" onclick="printAll()">📄 全タブをPDF出力（A4）</button>
+      <button onclick="exportJSON()">💾 データをJSONで保存</button>
+      <label style="cursor:pointer;">
+        <button onclick="document.getElementById('importFile').click()">📂 JSONデータを読み込む</button>
+        <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importJSON(event)">
+      </label>
+    </div>
+  </div>
+  <div class="card" style="background:#f9f9f8;">
+    <div style="font-size:12px;font-weight:500;margin-bottom:8px;">出力プレビュー</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.9;">
+      <div>📊 <strong>ダッシュボード</strong>：KPIカード、優先度マトリクス、ストレスサマリー、カテゴリ別工数</div>
+      <div>✅ <strong>タスク管理</strong>：全タスク一覧（開始日・終了日・担当・工数）</div>
+      <div>📋 <strong>WBS</strong>：カテゴリ別作業分解構造表</div>
+      <div>🧘 <strong>ストレスケア</strong>：場所×部位マトリクス、記録ログ</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script src="assets/js/00-sync.js?v=20260516-5"></script>
+<script src="assets/js/01-data-catalogs.js?v=20260516-5"></script>
+<script src="assets/js/02-state-storage.js?v=20260516-5"></script>
+<script src="assets/js/03-dashboard.js?v=20260516-5"></script>
+<script src="assets/js/04-tasks.js?v=20260516-5"></script>
+<script src="assets/js/05-drag-drop.js?v=20260516-5"></script>
+<script src="assets/js/06-wbs.js?v=20260516-5"></script>
+<script src="assets/js/07-stress.js?v=20260516-5"></script>
+<script src="assets/js/08-export.js?v=20260516-5"></script>
+<script src="assets/js/09-bootstrap.js?v=20260516-5"></script>
+</body>
+</html>

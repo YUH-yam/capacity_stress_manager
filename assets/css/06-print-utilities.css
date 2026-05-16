@@ -1,0 +1,54 @@
+/* print / PDF */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { background: white; font-size: 12px; }
+  .app { max-width: 100%; padding: 0; margin: 0; }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  .tabs { display: none; }
+  .panel { display: block !important; page-break-inside: avoid; }
+  .panel-print-section { page-break-before: always; }
+  .panel-print-section:first-child { page-break-before: avoid; }
+  @page { size: A4; margin: 15mm 12mm; }
+  .card, .stat { box-shadow: none; }
+  .wbs-tl-label { width: 160px; font-size: 10px; padding: 4px 6px; }
+  .wbs-tl-task .wbs-tl-chart { min-height: 40px; }
+  .wbs-tl-cat .wbs-tl-chart { min-height: 22px; }
+  .smx-table th, .smx-table td { font-size: 10px; padding: 4px 3px; }
+  .task-actions { display: none; }
+  .task-drag { display: none; }
+  .deadline-edit { display: none !important; }
+  .add-form-wrap { display: none; }
+  .filter-row { display: none; }
+  .cap-row { display: none; }
+  .wbs-mobile { display: none !important; }
+  .wbs-timeline-desktop { display: block !important; }
+  h2.print-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--text);
+  }
+}
+.print-only { display: none; }
+/* chart wrap */
+.chart-wrap { position: relative; height: 160px; margin-bottom: 10px; }
+/* legend */
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text2); }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+/* progress bar */
+.prog-bar { height: 3px; background: var(--border); border-radius: 2px; }
+.prog-fill { height: 3px; border-radius: 2px; }
+/* gap helper */
+.gap { margin-bottom: 1rem; }
+/* stress legend */
+.s-legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text2); margin-bottom: 8px; }
+.s-legend-item { display: flex; align-items: center; gap: 3px; }
+.s-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+/* export bar */
+.export-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+/* print header */
+.print-header { display: none; }
+@media print { .print-header { display: block; margin-bottom: 8px; font-size: 10px; color: var(--text2); } }

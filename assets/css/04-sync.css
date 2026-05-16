@@ -1,0 +1,53 @@
+/* sync status */
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text2);
+  margin-top: 5px;
+}
+.sync-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text3);
+  flex-shrink: 0;
+  transition: background .4s;
+}
+.sync-dot.idle    { background: var(--text3); }
+.sync-dot.syncing { background: var(--orange); animation: blink .8s infinite; }
+.sync-dot.synced  { background: var(--green); }
+.sync-dot.error   { background: var(--red); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+@media (max-width: 720px) {
+  .app { padding: 1rem .75rem 3rem; }
+  .header { align-items: flex-start; gap: 12px; }
+  .header-left .date { font-size: 17px; }
+  .header-right .util { font-size: 22px; }
+  .two-col { grid-template-columns: 1fr; }
+  .card { padding: .9rem; border-radius: var(--radius-md); }
+  .task-item {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 8px;
+  }
+  .task-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding-left: 0;
+  }
+  .deadline-edit,
+  .effort-edit-row,
+  .prog-edit-row {
+    align-items: stretch;
+  }
+  .deadline-edit input,
+  .effort-edit-row input[type=number] {
+    min-width: 130px;
+  }
+  .settings-grid { grid-template-columns: 1fr; }
+  #wbsContent { padding: .75rem; }
+  .wbs-timeline-desktop { display: none; }
+  .wbs-mobile { display: block; }
+}
